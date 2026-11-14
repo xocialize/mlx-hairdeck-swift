@@ -1,5 +1,7 @@
 import Foundation
 import HairDeckCore
+import CoreGraphics
+import ImageIO
 import MLX
 import MLXRandom
 import simd
@@ -40,6 +42,10 @@ import simd
 //       a 448 x 448 model input (the character on white, cropped to the head) → DINOv3 → image DiT (Euler 50, CFG 2)
 //       → cards, per-card colours and chains → a coloured, skinned hair item on the body. --matte: the person matte of
 //       the crop (white = character); without it "not white" stands in. --save: cards, chains and tokens as files.
+
+//   RunHairDeck gate4b --fixtures Fixtures/p4b
+//       the model input and matte crop from a picture, its matte and a head box, against the reference's (P4b)
+//   RunHairDeck model-input --image IMAGE.png --matte MATTE.png --box X0,Y0,X1,Y1 --out INPUT.png [--matte-out M.png]
 
 func err(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
 
@@ -434,6 +440,64 @@ func imageHair() throws {
                  tLoad, tDino, tSample, tColour, tChains, tItem, Double(GPU.peakMemory) / Double(1 << 30), peakRSSGiB()))
 }
 
+func writePNG(_ px: [UInt8], _ w: Int, _ h: Int, channels: Int, to path: String) throws {
+    var rgba = [UInt8](repeating: 255, count: w * h * 4)
+    for i in 0..<(w * h) { for a in 0..<3 { rgba[i * 4 + a] = px[i * channels + min(a, channels - 1)] } }
+    let img = CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: w * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                      bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue), provider: CGDataProvider(data: Data(rgba) as CFData)!,
+                      decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+    let dst = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil)!
+    CGImageDestinationAddImage(dst, img, nil)
+    guard CGImageDestinationFinalize(dst) else { throw HDIO.IOError.bad("cannot write \(path)") }
+}
+
+func rgbOf(_ path: String) throws -> (px: [UInt8], w: Int, h: Int) {
+    let i = try HDIO.readRGBA(path)
+    var out = [UInt8](repeating: 0, count: i.width * i.height * 3)
+    for p in 0..<(i.width * i.height) { for a in 0..<3 { out[p * 3 + a] = i.pixels[p * 4 + a] } }
+    return (out, i.width, i.height)
+}
+
+func gate4b() throws -> Bool {
+    let fx = need("--fixtures")
+    var ok = true
+    for ex in ["ex01", "ex02"] {
+        let info = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: "\(fx)/\(ex)_box.json")!) as! [String: Any]
+        let box = (info["box"] as! [NSNumber]).map { $0.doubleValue }
+        func b(_ k: String) -> [Double]? { (info[k] as? [NSNumber])?.map { $0.doubleValue } }
+        let hb = ModelInput.headBox(hair: b("hair_box"), face: b("face_box"))!
+        let boxErr = zip(hb, box).map { abs($0 - $1) }.max()!
+        let rgb = try rgbOf("\(fx)/\(ex)_rgb.png"), person = try rgbOf("\(fx)/\(ex)_person.png")
+        let matte = (0..<(rgb.w * rgb.h)).map { person.px[$0 * 3] }
+        let got = ModelInput.make(rgb: rgb.px, matte: matte, width: rgb.w, height: rgb.h, box: box)
+        let want = try rgbOf("\(fx)/\(ex)_input.png")
+        let diffs = zip(got, want.px).map { abs(Int($0) - Int($1)) }
+        let nd = diffs.filter { $0 != 0 }.count, md = diffs.max() ?? 0
+        let mc = ModelInput.matteCrop(matte: matte, width: rgb.w, height: rgb.h, box: box)
+        let wm = try rgbOf("\(fx)/\(ex)_matte.png")
+        let mdiff = (0..<(448 * 448)).filter { (mc[$0] == 1) != (wm.px[$0 * 3] > 127) }.count
+        // the reference takes the mask boxes at its 1024 px working resolution, so its box can sit a few
+        // hundredths of a pixel from the one made from the full-resolution mask boxes
+        let pass = boxErr < 0.05 && md == 0 && mdiff == 0
+        if !pass { ok = false }
+        print(String(format: "%@ %@: head box from the hair and face boxes within %.1e px; model input %d of %d values differ (max %d); matte crop %d pixels differ",
+                     pass ? "ok  " : "FAIL", ex, boxErr, nd, got.count, md, mdiff))
+    }
+    return ok
+}
+
+func modelInput() throws {
+    let rgb = try rgbOf(need("--image")), person = try rgbOf(need("--matte"))
+    guard person.w == rgb.w, person.h == rgb.h else { err("the matte must have the image's size"); exit(2) }
+    let box = need("--box").split(separator: ",").map { Double($0)! }
+    let matte = (0..<(rgb.w * rgb.h)).map { person.px[$0 * 3] }
+    try writePNG(ModelInput.make(rgb: rgb.px, matte: matte, width: rgb.w, height: rgb.h, box: box), 448, 448, channels: 3, to: need("--out"))
+    if let mo = opt("--matte-out") {
+        try writePNG(ModelInput.matteCrop(matte: matte, width: rgb.w, height: rgb.h, box: box).map { $0 * 255 }, 448, 448, channels: 1, to: mo)
+    }
+    print("wrote \(need("--out"))")
+}
+
 func describeBody() throws {
     let v = try VRMBody(vrm: need("--vrm"))
     let p = v.placement
@@ -590,6 +654,12 @@ do {
         let ok = flag("--gpu") ? try gate4() : try Device.withDefaultDevice(.cpu) { try gate4() }
         print(ok ? "GATE PASSED" : "GATE FAILED")
         exit(ok ? 0 : 1)
+    case "gate4b":
+        let ok = try gate4b()
+        print(ok ? "GATE PASSED" : "GATE FAILED")
+        exit(ok ? 0 : 1)
+    case "model-input":
+        try modelInput()
     case "image-hair":
         try imageHair()
     case "hair-item":

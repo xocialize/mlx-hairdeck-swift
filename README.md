@@ -10,7 +10,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 | P1 | point cloud → Dora-VAE 1.1 encoder → point-cloud set DiT (Euler 50, CFG 2) → card VAE decoder → cards | parity gate passed, Table 1 reproduced (2026-11-13) |
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
 | P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
-| P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b not started |
+| P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b: model input from picture + matte + head box bit-exact; the matte and the head box themselves still come from outside |
 | P5 | MLXEngine `ModelPackage`, conformance, weights repo | not started |
 
 ## P1 results
@@ -96,9 +96,20 @@ The demo image and the generated hair with its per-card colours on Spec:
 ![image to hair on Spec](docs/p4_image_to_hair_on_spec.jpg)
 
 Per-card colours travel as a small texture (one 8-pixel column per card, 18 rows), used as the base colour and the
-MToon shade texture. Not yet in Swift: the preprocessing that makes the model input from a picture (the person
-matte and the head crop) — the crop above comes from the reference's preprocessing, and the matte handed to the
-colour model was "not white".
+MToon shade texture. The crop above comes from the reference's preprocessing, and the matte handed to the colour
+model was "not white".
+
+## P4b so far
+
+`ModelInput` turns a picture, its person matte and a head box into the 448 px model input and the matte crop with
+Pillow's own integer arithmetic (alpha compositing, premultiplied bicubic resize, nearest for the matte): on demo
+images ex01 and ex02 all 602,112 values of the model input and every matte pixel equal the reference's
+(`RunHairDeck gate4b`). The head box is the square around hair ∪ face with an 8 % margin.
+
+Still from outside: the person matte (BiRefNet-matting in the reference; the fleet has `mlx-birefnet-swift`) and the
+hair and face boxes (SAM 3 with text prompts in the reference). Reference timings on this Mac, 12 demo images, MPS:
+SAM 3 0.8–0.9 s and the matte 0.2 s per image once warm (13.3 s and 7.2 s for the first image); the boxes of all 12
+are in `Fixtures/p4b/*_box.json`.
 
 ## Use
 
@@ -114,7 +125,8 @@ swift run -c release RunHairDeck gate3 --fixtures Fixtures/p3
 swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --vrm BODY.vrm --out HAIR.glb
 swift run -c release RunHairDeck body --vrm BODY.vrm
 swift run -c release RunHairDeck gate4 --workspace HAIRDECK_ROOT --fixtures Fixtures/p4
-swift run -c release RunHairDeck image-hair --workspace HAIRDECK_ROOT --crop MODEL_INPUT.png --vrm BODY.vrm --out HAIR.glb
+swift run -c release RunHairDeck model-input --image IMAGE.png --matte MATTE.png --box X0,Y0,X1,Y1 --out MODEL_INPUT.png --matte-out M.png
+swift run -c release RunHairDeck image-hair --workspace HAIRDECK_ROOT --crop MODEL_INPUT.png --matte M.png --vrm BODY.vrm --out HAIR.glb
 ```
 
 `run` reads `DIR/{idx:03d}.ply` (10,000 points with normals, the `hair_reform.ply` format) and writes CHARM-format
