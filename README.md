@@ -117,6 +117,25 @@ hair and face boxes (SAM 3 with text prompts in the reference). Reference timing
 SAM 3 0.8–0.9 s and the matte 0.2 s per image once warm (13.3 s and 7.2 s for the first image); the boxes of all 12
 are in `Fixtures/p4b/*_box.json`.
 
+## How much the two outside inputs matter
+
+On the 12 demo images (`tools/input_sensitivity.py`; same noise, hair compared by the chamfer distance between card
+control points, in face widths), against the reference's own matte and head box:
+
+| change | median | largest |
+|---|---|---|
+| another seed, same inputs | 0.072 | 0.338 |
+| the matte from Gaea's `image.matte` (BiRefNet) instead of the reference's | 0.040 | 0.209 |
+| head box 15 % larger | 0.043 | 0.110 |
+| head box 10 % smaller | 0.036 | 0.091 |
+| head box moved 8 % of its side right / down | 0.033 / 0.037 | 0.135 / 0.133 |
+
+Each change moves the hair less than drawing another seed does, on the median and in the worst case; per image the
+only exception is one picture where the larger box (0.062) exceeds that picture's seed spread (0.043). The mattes
+themselves agree with the reference's at IoU 0.89–0.98 on ten pictures and badly on two busy illustrations (0.20 and
+0.58: BiRefNet alone keeps the background the reference's SAM 3-guided matte drops), and even there the hair changes
+less than with another seed.
+
 ## Use
 
 Needs a HairDeck workspace with the released files (`scripts/setup/download_weights.py --only hairdeck dora`):
