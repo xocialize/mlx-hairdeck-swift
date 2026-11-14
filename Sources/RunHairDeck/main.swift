@@ -20,6 +20,11 @@ import MLX
 //       the cards of a point-cloud run with each row's head fit (FITS.json: [{"row", "k", "b"}]).
 //       → RUN/chains_head.json {row: [chain]} in the head frame, RUN/swift_timing.json.
 
+//   RunHairDeck gate3 --fixtures Fixtures/p3
+//       the hair rig (card mesh, UVs, skinning) against hairdeck.vrm.prep on HairDeck's avatar body (P3)
+//   RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --body BODY.json --out HAIR.glb [--vrm0] [--colour R,G,B]
+//       head-frame cards and chains on a body → a skinned hair item .glb with VRMC_springBone
+
 func err(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
 
 var args = Array(CommandLine.arguments.dropFirst())
@@ -193,6 +198,74 @@ func gate2() throws -> Bool {
     return ok
 }
 
+/// A float64 `.npy` as Doubles (the P3 fixtures keep the reference's precision).
+func npyDoubles(_ path: String) throws -> [Double] {
+    let d = FileManager.default.contents(atPath: path)!
+    let h = try NPYReader.parseHeader(d, label: path)
+    precondition(h.descr == "<f8", "\(path): expected float64")
+    return d.withUnsafeBytes { b in (0..<h.count).map { b.loadUnaligned(fromByteOffset: h.dataOffset + 8 * $0, as: Double.self) } }
+}
+
+func loadChains(_ path: String) throws -> [(joints: [[Double]], stiffness: Double)] {
+    let arr = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: path)!) as! [[String: Any]]
+    return arr.map { (($0["joints"] as! [[NSNumber]]).map { $0.map { $0.doubleValue } }, ($0["stiffness"] as! NSNumber).doubleValue) }
+}
+
+func gate3() throws -> Bool {
+    let fx = need("--fixtures")
+    let body = try BodyPlacement(json: "\(fx)/body.json")
+    let rig = HairRig.build(cards: try Cards.load(json: "\(fx)/cards_head.json"), chains: try loadChains("\(fx)/chains_head.json"), body: body)
+    var ok = true
+    func ints(_ n: String) throws -> [Int] { try NPYReader.load("\(fx)/\(n).npy").asArray(Int32.self).map { Int($0) } }
+    func checkD(_ name: String, _ got: [Double], _ want: [Double], tol: Double) {
+        let same = got.count == want.count
+        let m = same ? zip(got, want).map { abs($0 - $1) }.max() ?? 0 : .infinity
+        if !(m <= tol) { ok = false }
+        print(String(format: "%@ %-12@ %d values, max_abs %.3e (tol %.0e)", m <= tol ? "ok  " : "FAIL", name as NSString, got.count, m, tol))
+    }
+    func checkI(_ name: String, _ got: [Int], _ want: [Int]) {
+        let diff = got.count == want.count ? zip(got, want).filter { $0 != $1 }.count : -1
+        if diff != 0 { ok = false }
+        print(String(format: "%@ %-12@ %d values, %d differ", diff == 0 ? "ok  " : "FAIL", name as NSString, got.count, diff))
+    }
+    checkD("V", rig.vertices.flatMap { [$0.x, $0.y, $0.z] }, try npyDoubles("\(fx)/V.npy"), tol: 1e-9)
+    checkI("F", rig.faces.flatMap { $0 }, try ints("F"))
+    checkD("UV", rig.uv.flatMap { [$0.x, $0.y] }, try npyDoubles("\(fx)/UV.npy"), tol: 1e-12)
+    checkI("vcard", rig.card, try ints("vcard"))
+    checkI("vchain", rig.chain, try ints("vchain"))
+    // A vertex exactly on the bisector plane of a joint is equally near both segments, and which one
+    // wins is a rounding accident; the binding is the same either way (the two segments at α = 0.5).
+    // Such a vertex may come out with (segment, segment2) swapped.
+    let wantSeg = try ints("vseg"), wantSeg2 = try ints("vseg2")
+    var swapped = 0, wrong = 0
+    for i in 0..<min(rig.segment.count, wantSeg.count) where rig.segment[i] != wantSeg[i] || rig.segment2[i] != wantSeg2[i] {
+        if rig.segment[i] == wantSeg2[i] && rig.segment2[i] == wantSeg[i] && abs(rig.alpha[i] - 0.5) < 1e-9 {
+            swapped += 1
+            print(String(format: "     vertex %d: segments (%d, %d) vs (%d, %d), alpha %.15f, weight %.6f — a tie", i, rig.segment[i], rig.segment2[i], wantSeg[i], wantSeg2[i], rig.alpha[i], rig.weight[i]))
+        } else { wrong += 1 }
+    }
+    if wrong != 0 || rig.segment.count != wantSeg.count { ok = false }
+    print(String(format: "%@ vseg, vseg2  %d values, %d differ, %d ties with the two segments swapped", wrong == 0 ? "ok  " : "FAIL", rig.segment.count, wrong, swapped))
+    checkD("vw", rig.weight, try npyDoubles("\(fx)/vw.npy"), tol: 1e-9)
+    checkD("valpha", rig.alpha, try npyDoubles("\(fx)/valpha.npy"), tol: 1e-9)
+    checkD("chain_J", rig.chains.flatMap { $0.joints.flatMap { [$0.x, $0.y, $0.z] } }, try npyDoubles("\(fx)/chain_J.npy"), tol: 1e-9)
+    checkD("stiffness", rig.chains.map { $0.stiffness }, try npyDoubles("\(fx)/stiffness.npy"), tol: 1e-12)
+    let hj = body.headJointWorld
+    checkD("head_joint", [hj.x, hj.y, hj.z], try npyDoubles("\(fx)/head_joint.npy"), tol: 1e-9)
+    print("     cards on a chain \(rig.cardsOnChain), bind mismatches \(rig.bindMismatch), chains \(rig.chains.count), dropped \(rig.chainsDropped)")
+    return ok
+}
+
+func hairItem() throws {
+    let body = try BodyPlacement(json: need("--body"))
+    let rig = HairRig.build(cards: try Cards.load(json: need("--cards")), chains: opt("--chains") != nil ? try loadChains(need("--chains")) : [], body: body)
+    let colour = opt("--colour")?.split(separator: ",").map { Double($0)! } ?? [0.35, 0.22, 0.14]
+    let (data, s) = HairItem.glb(rig, headBone: body.headBone, headJoint: body.headJointWorld, colour: colour, vrm0Axes: flag("--vrm0"))
+    try data.write(to: URL(fileURLWithPath: need("--out")))
+    print("wrote \(need("--out")): \(data.count) bytes, \(s.vertices) vertices, \(s.triangles) triangles, \(s.bones) chain bones, \(s.springs) springs, "
+          + "\(s.headOnly) vertices on the head only, \(s.threeInfluences) with three influences; cards on a chain \(rig.cardsOnChain)")
+}
+
 func chains() throws {
     let out = need("--out")
     let t0 = Date()
@@ -304,6 +377,12 @@ do {
         exit(ok ? 0 : 1)
     case "chains":
         try chains()
+    case "gate3":
+        let ok = try gate3()
+        print(ok ? "GATE PASSED" : "GATE FAILED")
+        exit(ok ? 0 : 1)
+    case "hair-item":
+        try hairItem()
     case "run":
         if flag("--cpu") { try Device.withDefaultDevice(.cpu) { try run() } } else { try run() }
     default:

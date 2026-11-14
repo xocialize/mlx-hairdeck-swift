@@ -9,7 +9,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 |---|---|---|
 | P1 | point cloud → Dora-VAE 1.1 encoder → point-cloud set DiT (Euler 50, CFG 2) → card VAE decoder → cards | parity gate passed, Table 1 reproduced (2026-11-13) |
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
-| P3 | hair item `.glb` writer (mesh, skinning, `VRMC_springBone`) | not started |
+| P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference, `.glb` loads and swings in three-vrm (2026-11-13); placement on an arbitrary VRM and the Item Studio merge still open |
 | P4 | image path (SAM 3, BiRefNet, DINOv3, image DiT, colour model) | not started |
 | P5 | MLXEngine `ModelPackage`, conformance, weights repo | not started |
 
@@ -53,6 +53,24 @@ evaluation (`tools/eval_p2.py`); Swift on the GPU with default TF32:
 Chains: 0.03 s per hairstyle for sampling (58 in one batch) and 0.03 s for the head-frame card tokens; peak MLX
 memory 2.0 GiB.
 
+## P3 results
+
+The rig (`HairRig`: card mesh, UVs, card → chain assignment, vertex binding) against `hairdeck.vrm.prep` on HairDeck's
+avatar body, for test row 1 (165 cards, 11 chains; `tools/dump_p3_fixtures.py` → `Fixtures/p3`): 21,048 vertices equal
+to 2.2e-16, 51,300 faces equal, UVs to 1.8e-15, chain and card indices equal, weights to 2.0e-14. One vertex lies exactly
+on a joint's bisector and picks the other of its two segments (the same binding: both at α = 0.5).
+
+The hair item (`HairItem.glb`, 1.8 MB for this hairstyle): `inspect-vrm.mjs` reports no problems (11 springs, 55 spring
+joints, 45 skin joints). In three.js 0.162 with `@pixiv/three-vrm-springbone` 3.5.5 (`tools/check_hair_item.mjs`) it loads
+as a skinned mesh (weights sum to 1 within 3e-8) and under a 50° head turn the chain ends lag by up to 0.29 m and
+are back at rest after 2.5 s. Rendered on the avatar in Blender (`tools/render_hair_item.py`):
+
+![hair item on the avatar](docs/p3_hair_item_on_avatar.jpg)
+
+Not in the item: the body's colliders (so HairDeck's rule that keeps the scalp part of a chain rigid inside the head
+collider is not applied), per-card colours (P4), and a body description computed from an arbitrary VRM — the body is
+given as HairDeck's fit (`Fixtures/p3/body.json`).
+
 ## Use
 
 Needs a HairDeck workspace with the released files (`scripts/setup/download_weights.py --only hairdeck dora`):
@@ -63,6 +81,8 @@ swift run -c release RunHairDeck gate --workspace HAIRDECK_ROOT --fixtures Fixtu
 swift run -c release RunHairDeck run --workspace HAIRDECK_ROOT --plys DIR --noise NOISE.npy --out RUN
 swift run -c release RunHairDeck gate2 --workspace HAIRDECK_ROOT --fixtures Fixtures/p2
 swift run -c release RunHairDeck chains --workspace HAIRDECK_ROOT --cards RUN --fits FITS.json --noise NOISE.npy --out CHAINS
+swift run -c release RunHairDeck gate3 --fixtures Fixtures/p3
+swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --body BODY.json --out HAIR.glb
 ```
 
 `run` reads `DIR/{idx:03d}.ply` (10,000 points with normals, the `hair_reform.ply` format) and writes CHARM-format
