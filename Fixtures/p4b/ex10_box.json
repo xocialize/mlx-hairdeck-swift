@@ -1,0 +1,1 @@
+{"example": "ex10", "size": [850, 581], "status": "ok", "box": [31.7, -42.8, 558.3, 483.8], "hair_box": [68.0, 0.0, 522.0, 441.0], "face_box": [223.0, 83.0, 404.0, 313.0], "person_box": [0.0, 0.0, 794.0, 581.0], "input_alpha": false, "time": {"sam3": 0.8056, "matte": 0.155, "recipe": 0.0216, "full_res": 0.0079, "total": 1.0167}}

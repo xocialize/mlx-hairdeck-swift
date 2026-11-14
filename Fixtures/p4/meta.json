@@ -1,0 +1,105 @@
+{
+ "img_args": {
+  "name": "image_model",
+  "rep": "rgb",
+  "render_root": "data/renders",
+  "vae": "card_vae",
+  "K": 64,
+  "nmax": 192,
+  "dim": 768,
+  "depth": 12,
+  "heads": 12,
+  "dino": "vitl16",
+  "res": 448,
+  "init": "ckpt/pointcloud_model/ema_080000.pt",
+  "bs": 48,
+  "lr": 0.0001,
+  "steps": 100000,
+  "warmup": 1000,
+  "ema": 0.9995,
+  "p_drop": 0.1,
+  "w_root": 4.0,
+  "w_exist": 4.0,
+  "w_nrm": 1.0,
+  "workers": 32,
+  "ckpt_every": 10000,
+  "resume": false,
+  "max_steps_this_run": 0,
+  "head": true,
+  "aug": true
+ },
+ "col_args": {
+  "dim": 768,
+  "depth": 12,
+  "heads": 12,
+  "dino": "vitl16",
+  "res": 448,
+  "vae": "card_vae",
+  "bins": 16,
+  "mask": "person"
+ },
+ "n_cards": 97,
+ "n_slots": 97,
+ "img_keys_not_in_pc": [
+  "ctx_pos"
+ ],
+ "col_extra_keys": {
+  "col_ada.bias": [
+   1536
+  ],
+  "col_ada.weight": [
+   1536,
+   768
+  ],
+  "col_out.bias": [
+   48
+  ],
+  "col_out.weight": [
+   48,
+   768
+  ],
+  "mu": [
+   3
+  ],
+  "patch.bias": [
+   768
+  ],
+  "patch.weight": [
+   768,
+   7
+  ],
+  "sd": [
+   3
+  ]
+ },
+ "col_mu": [
+  42.11640548706055,
+  10.674283027648926,
+  4.374164581298828
+ ],
+ "col_sd": [
+  28.61343765258789,
+  21.59564971923828,
+  24.922245025634766
+ ],
+ "dino_norm_eps": 1e-05,
+ "dino_block_norm_eps": 1e-05,
+ "rope_periods": [
+  1.0,
+  1.3359375,
+  1.78125,
+  2.375,
+  3.15625,
+  4.21875,
+  5.625,
+  7.5,
+  10.0,
+  13.3125,
+  17.75,
+  23.75,
+  31.625,
+  42.25,
+  56.25,
+  75.0
+ ]
+}
