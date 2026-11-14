@@ -1,4 +1,5 @@
 import Foundation
+import simd
 
 /// Cards and chains → one skinned hair mesh, without Blender: a port of `hairdeck/cards/frames.py`,
 /// `hairdeck/cards/mesh.py` (card mesh, faces, UVs) and `hairdeck/vrm/prep.py` with the geometric
@@ -274,6 +275,20 @@ public struct BodyPlacement {
     /// The head joint in the dataset frame and the name of the body's head bone.
     public var headJointDataset: V3
     public var headBone: String
+    /// World rotation of the head bone at rest (identity for HairDeck's VRM 0.x bodies).
+    public var headRotation = simd_quatd(ix: 0, iy: 0, iz: 0, r: 1)
+
+    public init(k: Double, b: V3, s: Double, t: V3, faceWidthDataset: Double, headJointDataset: V3, headBone: String,
+                headRotation: simd_quatd = simd_quatd(ix: 0, iy: 0, iz: 0, r: 1)) {
+        self.k = k
+        self.b = b
+        self.s = s
+        self.t = t
+        self.faceWidthDataset = faceWidthDataset
+        self.headJointDataset = headJointDataset
+        self.headBone = headBone
+        self.headRotation = headRotation
+    }
 
     public var faceWidthWorld: Double { faceWidthDataset / s }
     public func headToDataset(_ p: V3) -> V3 { (p - b) / k }

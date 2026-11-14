@@ -1,6 +1,7 @@
 import Foundation
 import HairDeckCore
 import MLX
+import simd
 
 // RunHairDeck — parity gates and the end-to-end point-cloud run of mlx-hairdeck-swift.
 //
@@ -22,8 +23,13 @@ import MLX
 
 //   RunHairDeck gate3 --fixtures Fixtures/p3
 //       the hair rig (card mesh, UVs, skinning) against hairdeck.vrm.prep on HairDeck's avatar body (P3)
-//   RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --body BODY.json --out HAIR.glb [--vrm0] [--colour R,G,B]
-//       head-frame cards and chains on a body → a skinned hair item .glb with VRMC_springBone
+//   RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json (--body BODY.json | --vrm BODY.vrm) --out HAIR.glb
+//                         [--vrm0] [--colour R,G,B]
+//       head-frame cards and chains on a body → a skinned hair item .glb with VRMC_springBone. --body: HairDeck's
+//       fit of a body; --vrm: the description read from the VRM itself (face-mesh bounds, head bone); the item is
+//       written in the file's own axes (--vrm0 forces VRM 0.x axes with --body).
+//   RunHairDeck body --vrm BODY.vrm [--body BODY.json]
+//       the description read from a VRM, and how it differs from a HairDeck fit of the same body
 
 func err(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
 
@@ -256,11 +262,38 @@ func gate3() throws -> Bool {
     return ok
 }
 
+func describeBody() throws {
+    let v = try VRMBody(vrm: need("--vrm"))
+    let p = v.placement
+    print(String(format: "%@: VRM %@, head bone %@ at (%.4f, %.4f, %.4f), rest rotation (%.4f, %.4f, %.4f, %.4f)", need("--vrm"), v.isVRM0 ? "0.x" : "1.0",
+                 v.headBone, v.headPosition.x, v.headPosition.y, v.headPosition.z, v.headRotation.imag.x, v.headRotation.imag.y, v.headRotation.imag.z, v.headRotation.real))
+    print(String(format: "face mesh '%@': width %.4f m, anchor (%.4f, %.4f, %.4f); head frame → world scale %.5f", v.faceMesh, v.faceWidth, v.anchor.x, v.anchor.y, v.anchor.z, 1 / p.k))
+    if let bp = opt("--body") {
+        let h = try BodyPlacement(json: bp)
+        // the same head-frame points through both placements
+        var worst = 0.0
+        for q in [SIMD3<Double>(0, 0.45, 0), SIMD3(0.1, 0.3, -0.1), SIMD3(-0.15, 0.1, 0.05), SIMD3(0, -0.2, -0.2)] {
+            let a = p.datasetToWorld(p.headToDataset(q)), b = h.datasetToWorld(h.headToDataset(q))
+            worst = max(worst, simd_length(a - b))
+        }
+        let hj = simd_length(p.headJointWorld - h.headJointWorld)
+        print(String(format: "against %@: face width %.4f vs %.4f m, head joint differs by %.2e m, head-frame points land within %.2e m", bp, v.faceWidth, h.faceWidthWorld, hj, worst))
+    }
+}
+
 func hairItem() throws {
-    let body = try BodyPlacement(json: need("--body"))
+    var vrm0 = flag("--vrm0")
+    let body: BodyPlacement
+    if let vp = opt("--vrm") {
+        let v = try VRMBody(vrm: vp)
+        body = v.placement
+        vrm0 = v.isVRM0
+    } else {
+        body = try BodyPlacement(json: need("--body"))
+    }
     let rig = HairRig.build(cards: try Cards.load(json: need("--cards")), chains: opt("--chains") != nil ? try loadChains(need("--chains")) : [], body: body)
     let colour = opt("--colour")?.split(separator: ",").map { Double($0)! } ?? [0.35, 0.22, 0.14]
-    let (data, s) = HairItem.glb(rig, headBone: body.headBone, headJoint: body.headJointWorld, colour: colour, vrm0Axes: flag("--vrm0"))
+    let (data, s) = HairItem.glb(rig, headBone: body.headBone, headJoint: body.headJointWorld, headRotation: body.headRotation, colour: colour, vrm0Axes: vrm0)
     try data.write(to: URL(fileURLWithPath: need("--out")))
     print("wrote \(need("--out")): \(data.count) bytes, \(s.vertices) vertices, \(s.triangles) triangles, \(s.bones) chain bones, \(s.springs) springs, "
           + "\(s.headOnly) vertices on the head only, \(s.threeInfluences) with three influences; cards on a chain \(rig.cardsOnChain)")
@@ -383,6 +416,8 @@ do {
         exit(ok ? 0 : 1)
     case "hair-item":
         try hairItem()
+    case "body":
+        try describeBody()
     case "run":
         if flag("--cpu") { try Device.withDefaultDevice(.cpu) { try run() } } else { try run() }
     default:

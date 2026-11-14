@@ -9,7 +9,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 |---|---|---|
 | P1 | point cloud → Dora-VAE 1.1 encoder → point-cloud set DiT (Euler 50, CFG 2) → card VAE decoder → cards | parity gate passed, Table 1 reproduced (2026-11-13) |
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
-| P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference, `.glb` loads and swings in three-vrm (2026-11-13); placement on an arbitrary VRM and the Item Studio merge still open |
+| P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
 | P4 | image path (SAM 3, BiRefNet, DINOv3, image DiT, colour model) | not started |
 | P5 | MLXEngine `ModelPackage`, conformance, weights repo | not started |
 
@@ -67,9 +67,19 @@ are back at rest after 2.5 s. Rendered on the avatar in Blender (`tools/render_h
 
 ![hair item on the avatar](docs/p3_hair_item_on_avatar.jpg)
 
+**Body from a VRM** (`VRMBody`): the face mesh's POSITION bounds and the humanoid head bone, read from the file's
+JSON, give the same placement as HairDeck's Blender-made fit of its avatar — head-frame points land within 1.0e-8 m,
+the head joint within 3.6e-7 m. VRM 0.x and 1.0 files are both read; the item is written in the file's own axes, with
+the head bone's rest rotation (Spec's is not identity).
+
+**On Spec, through Item Studio's merge** (`tools/check_merged_vrm.mjs`, with `mergeVrm` extended to carry an item's
+spring bones): Spec.vrm + the hair item → a VRM 1.0 file with 13 springs (2 of the body, 11 hair), every hair chain
+intact under the head bone, the skinned hair within 2.4e-7 m of the item's vertices at rest, chain ends lagging up to
+0.29 m under the 50° head turn and back at rest after 2.5 s. The inspector reports no problems.
+
 Not in the item: the body's colliders (so HairDeck's rule that keeps the scalp part of a chain rigid inside the head
-collider is not applied), per-card colours (P4), and a body description computed from an arbitrary VRM — the body is
-given as HairDeck's fit (`Fixtures/p3/body.json`).
+collider is not applied; Spec has none), and per-card colours (P4). The face mesh is found by name (`face`), which
+holds for VRoid models.
 
 ## Use
 
@@ -82,7 +92,8 @@ swift run -c release RunHairDeck run --workspace HAIRDECK_ROOT --plys DIR --nois
 swift run -c release RunHairDeck gate2 --workspace HAIRDECK_ROOT --fixtures Fixtures/p2
 swift run -c release RunHairDeck chains --workspace HAIRDECK_ROOT --cards RUN --fits FITS.json --noise NOISE.npy --out CHAINS
 swift run -c release RunHairDeck gate3 --fixtures Fixtures/p3
-swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --body BODY.json --out HAIR.glb
+swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --vrm BODY.vrm --out HAIR.glb
+swift run -c release RunHairDeck body --vrm BODY.vrm
 ```
 
 `run` reads `DIR/{idx:03d}.ply` (10,000 points with normals, the `hair_reform.ply` format) and writes CHARM-format

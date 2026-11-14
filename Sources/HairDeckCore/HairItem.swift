@@ -1,4 +1,5 @@
 import Foundation
+import simd
 
 /// A hair item as a binary glTF (`.glb`): the skinned hair mesh of a `HairRig.Rig` on its own small
 /// skeleton, with a `VRMC_springBone` block. It replaces the Blender step of HairDeck's VRM export
@@ -9,9 +10,12 @@ import Foundation
 ///   nodes      head bone; per chain c the bones `HairGen_cCC_KK` at joint k (the first under the head
 ///              bone, each next under the one before) and a leaf `HairGen_cCC_end` at the last joint;
 ///              the mesh node
-///   skin       head bone + every chain bone; a vertex weighs head 1 − w, its segment w · α and the
-///              neighbour segment w · (1 − α) (HairDeck's binding); bones have no rotation, so the
-///              inverse bind matrices are translations
+///   skin       head bone + every chain bone and end node; a vertex weighs head 1 − w, its segment
+///              w · α and the neighbour segment w · (1 − α) (HairDeck's binding). The head node
+///              carries the body's head rotation at rest and the chain bones none of their own, so
+///              every bone's rest frame is the head's: local translations are in that frame and the
+///              inverse bind matrices are R⁻¹ · T(−p). The end nodes carry no weight; they are skin
+///              joints so that a merger that keeps only a skin's bones keeps the spring tails.
 ///   mesh       POSITION, NORMAL (area-weighted), TEXCOORD_0 (v flipped to glTF's top-left origin),
 ///              JOINTS_0, WEIGHTS_0, 32-bit indices; one double-sided material in the hair colour
 ///              with a `VRMC_materials_mtoon` block (shade colour 0.6 × the colour)
@@ -28,14 +32,19 @@ public enum HairItem {
         public var vertices = 0, triangles = 0, bones = 0, springs = 0, threeInfluences = 0, headOnly = 0
     }
 
-    public static func glb(_ rig: HairRig.Rig, headBone: String, headJoint: HairRig.V3, colour: [Double] = [0.35, 0.22, 0.14],
+    public static func glb(_ rig: HairRig.Rig, headBone: String, headJoint: HairRig.V3,
+                           headRotation: simd_quatd = simd_quatd(ix: 0, iy: 0, iz: 0, r: 1), colour: [Double] = [0.35, 0.22, 0.14],
                            name: String = "Hair_gen", vrm0Axes: Bool = false) -> (data: Data, summary: Summary) {
         typealias V3 = HairRig.V3
         let ax: (V3) -> V3 = { vrm0Axes ? V3(-$0.x, $0.y, -$0.z) : $0 }
+        let turn = simd_quatd(ix: 0, iy: 1, iz: 0, r: 0)
+        let R = vrm0Axes ? turn * headRotation * turn.inverse : headRotation
+        let Rinv = R.inverse
         var sum = Summary()
 
         // ---- nodes
-        var nodes: [[String: Any]] = [["name": headBone, "translation": [ax(headJoint).x, ax(headJoint).y, ax(headJoint).z]]]
+        var nodes: [[String: Any]] = [["name": headBone, "translation": [ax(headJoint).x, ax(headJoint).y, ax(headJoint).z],
+                                       "rotation": [R.imag.x, R.imag.y, R.imag.z, R.real]]]
         var world: [V3] = [ax(headJoint)]            // rest position of every node
         var children: [Int: [Int]] = [:]
         var chainBones: [[Int]] = []                 // per chain: node of the bone at joint k
@@ -45,7 +54,7 @@ public enum HairItem {
             var bones: [Int] = []
             for (k, j) in ch.joints.enumerated() {
                 let last = k == ch.joints.count - 1
-                let p = ax(j), rel = p - world[parent]
+                let p = ax(j), rel = Rinv.act(p - world[parent])
                 let i = nodes.count
                 nodes.append(["name": String(format: last ? "HairGen_c%02d_end" : "HairGen_c%02d_%02d", c, k), "translation": [rel.x, rel.y, rel.z]])
                 world.append(p)
@@ -56,10 +65,10 @@ public enum HairItem {
             chainBones.append(bones)
         }
         for (p, cs) in children { nodes[p]["children"] = cs }
-        let joints = [0] + chainBones.flatMap { $0 }
+        let joints = [0] + chainBones.flatMap { $0 } + chainEnd
         var jointIndex = [Int: Int]()
         for (i, n) in joints.enumerated() { jointIndex[n] = i }
-        sum.bones = joints.count - 1
+        sum.bones = chainBones.reduce(0) { $0 + $1.count }
 
         // ---- vertex attributes
         let n = rig.vertices.count
@@ -124,9 +133,11 @@ public enum HairItem {
         let idx = rig.faces.flatMap { $0.map { UInt32($0) } }
         let aIdx = accessor(view(idx.withUnsafeBufferPointer { Data(buffer: $0) }, target: 34963), "SCALAR", 5125, idx.count)
         var ibm = [Float]()
+        let Ri = simd_double3x3(Rinv)
         for j in joints {
-            let p = world[j]
-            ibm += [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, Float(-p.x), Float(-p.y), Float(-p.z), 1]
+            let tr = -(Ri * world[j])
+            for c in 0..<3 { ibm += [Float(Ri[c].x), Float(Ri[c].y), Float(Ri[c].z), 0] }
+            ibm += [Float(tr.x), Float(tr.y), Float(tr.z), 1]
         }
         let aIBM = accessor(view(floats(ibm), target: nil), "MAT4", 5126, joints.count)
         sum.vertices = n
