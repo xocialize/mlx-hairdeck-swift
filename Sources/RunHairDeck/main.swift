@@ -37,11 +37,14 @@ import simd
 //   RunHairDeck gate4 --workspace HAIRDECK_ROOT --fixtures Fixtures/p4 [--gpu]
 //       DINOv3 tokens, the image DiT, the colour model and chains from image tokens (P4a)
 
-//   RunHairDeck image-hair --workspace HAIRDECK_ROOT --crop MODEL_INPUT.png (--vrm BODY.vrm | --body BODY.json) --out HAIR.glb
-//                          [--matte MATTE.png] [--seed 0] [--noise NOISE.npy] [--no-chains] [--no-colours] [--save DIR]
-//       a 448 x 448 model input (the character on white, cropped to the head) → DINOv3 → image DiT (Euler 50, CFG 2)
-//       → cards, per-card colours and chains → a coloured, skinned hair item on the body. --matte: the person matte of
-//       the crop (white = character); without it "not white" stands in. --save: cards, chains and tokens as files.
+//   RunHairDeck image-hair --workspace HAIRDECK_ROOT (--image IMAGE.png --matte MATTE.png --box X0,Y0,X1,Y1 | --crop MODEL_INPUT.png)
+//                          (--vrm BODY.vrm | --body BODY.json) --out HAIR.glb
+//                          [--seed 0] [--noise NOISE.npy] [--no-chains] [--no-colours] [--save DIR]
+//       a picture with its person matte (same size, white = character) and a head box in pixels (the square around
+//       the hair and the face, as ModelInput.headBox makes it; the caller supplies it) → the 448 px model input →
+//       DINOv3 → image DiT (Euler 50, CFG 2) → cards, per-card colours and chains → a coloured, skinned hair item on
+//       the body. --crop: a ready 448 x 448 model input instead (the character on white); its matte is --matte
+//       (448 x 448) or, without one, "not white". --save: the model input, cards, chains and tokens as files.
 
 //   RunHairDeck gate4b --fixtures Fixtures/p4b
 //       the model input and matte crop from a picture, its matte and a head box, against the reference's (P4b)
@@ -372,19 +375,29 @@ func imageHair() throws {
     let t0 = Date()
     let m = try ImagePathModel(workspace: need("--workspace"))
     let tLoad = Date().timeIntervalSince(t0)
-    let img = try HDIO.readRGBA(need("--crop"))
-    guard img.width == 448, img.height == 448 else { err("the model input must be 448 x 448, got \(img.width) x \(img.height)"); exit(2) }
     var rgb = [Float](repeating: 0, count: 448 * 448 * 3), matte = [Float](repeating: 0, count: 448 * 448)
-    for i in 0..<(448 * 448) {
-        for a in 0..<3 { rgb[i * 3 + a] = Float(img.pixels[i * 4 + a]) }
-        matte[i] = (0..<3).contains { img.pixels[i * 4 + $0] < 250 } ? 1 : 0
+    var inputBytes: [UInt8]
+    if let ip = opt("--image") {
+        let pic = try rgbOf(ip), person = try rgbOf(need("--matte"))
+        guard person.w == pic.w, person.h == pic.h else { err("the matte must have the image's size"); exit(2) }
+        let box = need("--box").split(separator: ",").map { Double($0)! }
+        guard box.count == 4, box[2] > box[0], box[3] > box[1] else { err("--box needs X0,Y0,X1,Y1"); exit(2) }
+        let pm = (0..<(pic.w * pic.h)).map { person.px[$0 * 3] }
+        inputBytes = ModelInput.make(rgb: pic.px, matte: pm, width: pic.w, height: pic.h, box: box)
+        matte = ModelInput.matteCrop(matte: pm, width: pic.w, height: pic.h, box: box).map { Float($0) }
+    } else {
+        let img = try rgbOf(need("--crop"))
+        guard img.w == 448, img.h == 448 else { err("the model input must be 448 x 448, got \(img.w) x \(img.h)"); exit(2) }
+        inputBytes = img.px
+        for i in 0..<(448 * 448) { matte[i] = (0..<3).contains { img.px[i * 3 + $0] < 250 } ? 1 : 0 }
+        if let mp = opt("--matte") {
+            let mi = try rgbOf(mp)
+            guard mi.w == 448, mi.h == 448 else { err("the matte must be 448 x 448"); exit(2) }
+            for i in 0..<(448 * 448) { matte[i] = mi.px[i * 3] > 127 ? 1 : 0 }
+        }
+        if !matte.contains(1) { matte = [Float](repeating: 1, count: matte.count) }
     }
-    if let mp = opt("--matte") {
-        let mi = try HDIO.readRGBA(mp)
-        guard mi.width == 448, mi.height == 448 else { err("the matte must be 448 x 448"); exit(2) }
-        for i in 0..<(448 * 448) { matte[i] = mi.pixels[i * 4] > 127 ? 1 : 0 }
-    }
-    if !matte.contains(1) { matte = [Float](repeating: 1, count: matte.count) }
+    for i in 0..<rgb.count { rgb[i] = Float(inputBytes[i]) }
     let seed = UInt64(opt("--seed") ?? "0")!
     var t = Date()
     let rgbA = MLXArray(rgb, [1, 448, 448, 3])
@@ -425,6 +438,7 @@ func imageHair() throws {
         try JSONSerialization.data(withJSONObject: obj).write(to: URL(fileURLWithPath: "\(dir)/cards_head.json"))
         try JSONSerialization.data(withJSONObject: chains.map { $0.json }).write(to: URL(fileURLWithPath: "\(dir)/chains_head.json"))
         try HDIO.writeNPY(x, to: "\(dir)/tokens.npy")
+        try writePNG(inputBytes, 448, 448, channels: 3, to: "\(dir)/model_input.png")
     }
     var vrm0 = false
     let body: BodyPlacement
