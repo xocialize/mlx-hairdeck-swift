@@ -1,0 +1,3156 @@
+{
+ "row": 0,
+ "dora": {
+  "qk_norm": false,
+  "with_pi": false,
+  "heads": 12,
+  "n_enc": 8
+ },
+ "dora_encoder_keys": {
+  "encoder.cross_attn.attn.c_kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.attn.c_q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_3.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.ln_3.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.attn.c_kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.attn.c_q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_3.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.ln_3.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.cross_attn1.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.input_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.input_proj.weight": [
+   [
+    768,
+    54
+   ],
+   "torch.float32"
+  ],
+  "encoder.input_proj1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.input_proj1.weight": [
+   [
+    768,
+    54
+   ],
+   "torch.float32"
+  ],
+  "encoder.ln_post.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.ln_post.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.0.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.1.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.2.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.3.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.4.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.5.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.6.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.attn.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.attn.c_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.attn.c_qkv.weight": [
+   [
+    2304,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.ln_1.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.ln_1.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.ln_2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.ln_2.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.mlp.c_fc.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.mlp.c_fc.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.mlp.c_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "encoder.self_attn.resblocks.7.mlp.c_proj.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ]
+ },
+ "dit_args": {
+  "mode": "train",
+  "cond": "dora",
+  "name": "pointcloud_model",
+  "vae": "card_vae",
+  "dim": 768,
+  "depth": 12,
+  "heads": 12,
+  "bs": 64,
+  "lr": 0.0001,
+  "steps": 80000,
+  "ckpt_every": 10000,
+  "ckpt": "",
+  "out": "",
+  "cfg": 2.0,
+  "seed": 0
+ },
+ "dit_keys": {
+  "blocks.0.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.0.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.1.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.10.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.11.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.2.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.3.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.4.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.5.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.6.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.7.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.8.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.ada.bias": [
+   [
+    6912
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.ada.weight": [
+   [
+    6912,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.attn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.mlp.0.bias": [
+   [
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.mlp.0.weight": [
+   [
+    3072,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.mlp.2.weight": [
+   [
+    768,
+    3072
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.kn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.kv.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.o.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.o.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.q.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "blocks.9.xattn.qn.w": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "cond_norm.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "cond_norm.weight": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "cond_proj.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "cond_proj.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "f_ada.bias": [
+   [
+    1536
+   ],
+   "torch.float32"
+  ],
+  "f_ada.weight": [
+   [
+    1536,
+    768
+   ],
+   "torch.float32"
+  ],
+  "inp.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "inp.weight": [
+   [
+    768,
+    40
+   ],
+   "torch.float32"
+  ],
+  "null_ctx": [
+   [
+    512,
+    768
+   ],
+   "torch.float32"
+  ],
+  "out.bias": [
+   [
+    40
+   ],
+   "torch.float32"
+  ],
+  "out.weight": [
+   [
+    40,
+    768
+   ],
+   "torch.float32"
+  ],
+  "pool_mlp.0.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "pool_mlp.0.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "pool_mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "pool_mlp.2.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ],
+  "t_mlp.0.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "t_mlp.0.weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "t_mlp.2.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "t_mlp.2.weight": [
+   [
+    768,
+    768
+   ],
+   "torch.float32"
+  ]
+ },
+ "vae_args": {
+  "name": "card_vae",
+  "zdim": 32,
+  "dim": 256,
+  "depth": 4,
+  "L": 128,
+  "bs": 1024,
+  "lr": 0.0003,
+  "steps": 80000,
+  "kl": 1e-06,
+  "w_n": 0.1,
+  "nf": 6,
+  "fp32": false,
+  "dec": "ada",
+  "accum": 2,
+  "integ": false,
+  "uniform_target": true,
+  "geo_loss": true
+ },
+ "vae_keys": {
+  "cls": [
+   [
+    1,
+    1,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.ada.bias": [
+   [
+    1536
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.ada.weight": [
+   [
+    1536,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.mlp.0.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.mlp.0.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.mlp.2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.mlp.2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.o.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.o.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.qkv.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.0.qkv.weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.ada.bias": [
+   [
+    1536
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.ada.weight": [
+   [
+    1536,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.mlp.0.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.mlp.0.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.mlp.2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.mlp.2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.o.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.o.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.qkv.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.1.qkv.weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.ada.bias": [
+   [
+    1536
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.ada.weight": [
+   [
+    1536,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.mlp.0.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.mlp.0.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.mlp.2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.mlp.2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.o.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.o.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.qkv.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.2.qkv.weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.ada.bias": [
+   [
+    1536
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.ada.weight": [
+   [
+    1536,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.mlp.0.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.mlp.0.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.mlp.2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.mlp.2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.o.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.o.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.qkv.bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "dec.blocks.3.qkv.weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.linear1.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.linear1.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.linear2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.linear2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.norm1.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.norm1.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.norm2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.norm2.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.self_attn.in_proj_bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.self_attn.in_proj_weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.self_attn.out_proj.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.0.self_attn.out_proj.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.linear1.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.linear1.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.linear2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.linear2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.norm1.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.norm1.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.norm2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.norm2.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.self_attn.in_proj_bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.self_attn.in_proj_weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.self_attn.out_proj.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.1.self_attn.out_proj.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.linear1.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.linear1.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.linear2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.linear2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.norm1.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.norm1.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.norm2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.norm2.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.self_attn.in_proj_bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.self_attn.in_proj_weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.self_attn.out_proj.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.2.self_attn.out_proj.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.linear1.bias": [
+   [
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.linear1.weight": [
+   [
+    1024,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.linear2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.linear2.weight": [
+   [
+    256,
+    1024
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.norm1.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.norm1.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.norm2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.norm2.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.self_attn.in_proj_bias": [
+   [
+    768
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.self_attn.in_proj_weight": [
+   [
+    768,
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.self_attn.out_proj.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "enc.layers.3.self_attn.out_proj.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "from_z.0.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "from_z.0.weight": [
+   [
+    256,
+    32
+   ],
+   "torch.float32"
+  ],
+  "from_z.2.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "from_z.2.weight": [
+   [
+    256,
+    256
+   ],
+   "torch.float32"
+  ],
+  "inp.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "inp.weight": [
+   [
+    256,
+    18
+   ],
+   "torch.float32"
+  ],
+  "n_head.0.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "n_head.0.weight": [
+   [
+    256,
+    32
+   ],
+   "torch.float32"
+  ],
+  "n_head.2.bias": [
+   [
+    128
+   ],
+   "torch.float32"
+  ],
+  "n_head.2.weight": [
+   [
+    128,
+    256
+   ],
+   "torch.float32"
+  ],
+  "norm.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "norm.weight": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "out.bias": [
+   [
+    5
+   ],
+   "torch.float32"
+  ],
+  "out.weight": [
+   [
+    5,
+    256
+   ],
+   "torch.float32"
+  ],
+  "pe_enc": [
+   [
+    129,
+    256
+   ],
+   "torch.float32"
+  ],
+  "q_in.bias": [
+   [
+    256
+   ],
+   "torch.float32"
+  ],
+  "q_in.weight": [
+   [
+    256,
+    13
+   ],
+   "torch.float32"
+  ],
+  "to_z.bias": [
+   [
+    64
+   ],
+   "torch.float32"
+  ],
+  "to_z.weight": [
+   [
+    64,
+    256
+   ],
+   "torch.float32"
+  ]
+ },
+ "token_stats": {
+  "root_mu": [
+   0.00025433892752338845,
+   0.4583099926909928,
+   0.015970004985830104
+  ],
+  "root_sd": [
+   0.024076254807766685,
+   0.06142677998121062,
+   0.04168177132181873
+  ],
+  "rel_sd": 0.05702936489561521,
+  "w_mu": 0.01284007383171539,
+  "w_sd": 0.00943669043575355,
+  "t_mu": 0.006172666101801319,
+  "t_sd": 0.004685424424041563,
+  "logn_mu": 3.2875921110259263,
+  "logn_sd": 0.6394672943679061
+ },
+ "latent_stats": {
+  "mu": [
+   -1.551601767539978,
+   0.09472785890102386,
+   0.37750405073165894,
+   0.15446464717388153,
+   0.6664189100265503,
+   -0.032060325145721436,
+   0.07480469346046448,
+   1.6684832572937012,
+   0.2635577917098999,
+   -0.06420015543699265,
+   -0.25113093852996826,
+   0.034863341599702835,
+   -0.022541802376508713,
+   -0.02665804885327816,
+   0.15004561841487885,
+   -0.4092318117618561,
+   0.04502543434500694,
+   -0.205713152885437,
+   -0.14845611155033112,
+   1.1931813955307007,
+   -1.8711808919906616,
+   -0.08274289220571518,
+   1.000075340270996,
+   0.17332248389720917,
+   0.06328116357326508,
+   0.2041231393814087,
+   -0.04987090826034546,
+   -0.1727612465620041,
+   -0.3524552881717682,
+   -0.23820047080516815,
+   0.13943511247634888,
+   0.7060709595680237
+  ],
+  "sd": [
+   2.3301923274993896,
+   1.048771619796753,
+   1.1317732334136963,
+   0.609838604927063,
+   1.1166129112243652,
+   0.7014486193656921,
+   0.8124727606773376,
+   1.505863070487976,
+   0.6626821160316467,
+   1.14212167263031,
+   0.7617900371551514,
+   0.7904260754585266,
+   0.8519286513328552,
+   1.2029794454574585,
+   1.6713811159133911,
+   0.7437331080436707,
+   0.7420889139175415,
+   0.7513870000839233,
+   0.7472589015960693,
+   0.7947520613670349,
+   1.5793359279632568,
+   0.7237365245819092,
+   1.6045900583267212,
+   0.9772721529006958,
+   1.57520592212677,
+   0.6938802599906921,
+   0.78059983253479,
+   0.7397201061248779,
+   1.5341211557388306,
+   1.0291142463684082,
+   0.7948701977729797,
+   1.2959543466567993
+  ]
+ },
+ "vae_stats": {
+  "mu": [
+   0.0,
+   0.0,
+   0.0,
+   0.00805157981812954,
+   0.003867716994136572
+  ],
+  "sd": [
+   0.07094129174947739,
+   0.07094129174947739,
+   0.07094129174947739,
+   0.010392974130809307,
+   0.005255702883005142
+  ]
+ },
+ "n_cards": 82,
+ "torch": "2.8.0"
+}

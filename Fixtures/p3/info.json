@@ -1,0 +1,22 @@
+{
+ "h": 900,
+ "key": "avatar",
+ "n_cards": 76,
+ "n_cards_on_chain": 76,
+ "n_cards_bind_mismatch": 0,
+ "n_verts": 13976,
+ "n_faces": 34332,
+ "frac_verts_on_chain": 1.0,
+ "frac_verts_w_gt_half": 0.7333285632512879,
+ "frac_verts_two_segments": 0.5680452203777905,
+ "n_chains_pred": 19,
+ "n_chains_degenerate": 0,
+ "n_chains_dropped_no_cards": 0,
+ "n_chains": 19,
+ "n_bones": 78,
+ "min_seg_mm": 31.458973424435843,
+ "W_m": 0.21764852106570676,
+ "ASSIGN": 0.4,
+ "RAMP": 0.05,
+ "BLEND": true
+}
