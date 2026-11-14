@@ -91,3 +91,41 @@ public struct PointCloudModel {
                                   latentMu: HDIO.floats(ls["mu"]), latentSd: HDIO.floats(ls["sd"]))
     }
 }
+
+/// The released files of the chain model in a HairDeck workspace: the chain DiT, the card VAE (both
+/// halves) and the head-frame statistics.
+public struct ChainModel {
+    public let chain: ChainDiT
+    public let vae: CardVAE
+    /// The head-frame card tokenizer (`data/token_stats_head.json`, `latent_stats_head.json`).
+    public let tokenizer: CardTokenizer
+
+    public init(workspace root: String) throws {
+        let ckpt = "\(root)/ckpt/chain_model/model.safetensors", vaePath = "\(root)/ckpt/card_vae/model.safetensors"
+        try KeyContract.check(chain: ckpt, vae: vaePath)
+        let cs = try HDIO.jsonObject("\(root)/data/spring/chain_stats_head.json")
+        let doubles: (Any?) -> [Double] = { ($0 as? [Any] ?? []).map { ($0 as! NSNumber).doubleValue } }
+        chain = ChainDiT(weights: try Weights.load(ckpt), mu: doubles(cs["mu"]), sd: doubles(cs["sd"]))
+        let vs = try HDIO.jsonObject("\(root)/ckpt/card_vae/stats.json")
+        vae = CardVAE(weights: try Weights.load(vaePath), mu: HDIO.floats(vs["mu"]), sd: HDIO.floats(vs["sd"]))
+        let ts = try HDIO.jsonObject("\(root)/data/token_stats_head.json"), ls = try HDIO.jsonObject("\(root)/ckpt/card_vae/latent_stats_head.json")
+        tokenizer = CardTokenizer(rootMu: HDIO.floats(ts["root_mu"]), rootSd: HDIO.floats(ts["root_sd"]),
+                                  latentMu: HDIO.floats(ls["mu"]), latentSd: HDIO.floats(ls["sd"]))
+    }
+}
+
+extension Cards {
+    /// CHARM-format card json (`load_cards`: cards with at least 3 finite points) → cards.
+    public static func load(json path: String) throws -> [HairCard] {
+        guard let d = FileManager.default.contents(atPath: path),
+              let arr = try JSONSerialization.jsonObject(with: d) as? [[String: Any]] else { throw HDIO.IOError.bad("cannot read cards \(path)") }
+        var out: [HairCard] = []
+        for c in arr {
+            guard let seq = c["seq"] as? [[NSNumber]], seq.count >= 3 else { continue }
+            let rows = seq.map { $0.map { $0.doubleValue } }
+            guard rows.allSatisfy({ $0.allSatisfy { $0.isFinite } }) else { continue }
+            out.append(HairCard(seq: rows, triangle: (c["shape"] as? String) == "triangle"))
+        }
+        return out
+    }
+}

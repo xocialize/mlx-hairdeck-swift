@@ -12,6 +12,14 @@ import MLX
 //       DIR/{idx:03d}.ply → RUN/JsonResults/{idx:03d}.json (CHARM-format cards), RUN/tokens.npy,
 //       RUN/swift_timing.json. NOISE.npy: [rows, 192, 40], the reference's noise for the seed.
 
+//   RunHairDeck gate2 --workspace HAIRDECK_ROOT --fixtures Fixtures/p2 [--gpu]
+//       the chain DiT, chain decoding, the card VAE encoder and head-frame card tokens (P2)
+//   RunHairDeck chains --workspace HAIRDECK_ROOT --noise NOISE.npy --out RUN (--tokens CTOK.npy --rows ROWS.json
+//                      | --cards PC_RUN --fits FITS.json)
+//       chains for card tokens given directly ([H, 192, 40], head frame; ROWS.json: the row id of each), or for
+//       the cards of a point-cloud run with each row's head fit (FITS.json: [{"row", "k", "b"}]).
+//       → RUN/chains_head.json {row: [chain]} in the head frame, RUN/swift_timing.json.
+
 func err(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
 
 var args = Array(CommandLine.arguments.dropFirst())
@@ -122,6 +130,118 @@ func gate() throws -> Bool {
     return ok
 }
 
+func gate2() throws -> Bool {
+    let fx = need("--fixtures")
+    let model = try ChainModel(workspace: need("--workspace"))
+    func F(_ n: String) throws -> MLXArray { try NPYReader.load("\(fx)/\(n).npy") }
+    var ok = true
+    func check(_ name: String, _ got: MLXArray, _ want: MLXArray, tol: Float) {
+        guard got.shape == want.shape else { print("FAIL \(name): shape \(got.shape) vs \(want.shape)"); ok = false; return }
+        let m = HDOps.maxAbs(got, want)
+        if m > tol { ok = false }
+        print(String(format: "%@ %-22@ max_abs %.3e (tol %.0e, |ref|max %.2f) cos %.8f", m <= tol ? "ok  " : "FAIL", name as NSString, m, tol,
+                     abs(want).max().item(Float.self), HDOps.cosine(got, want)))
+    }
+    let chain = model.chain
+    let ctx = chain.encodeCond(try F("chain_card_tokens"))
+    check("chain_ctx", ctx, try F("chain_ctx"), tol: 1e-4)
+    let noise = try F("chain_noise")
+    let B = noise.shape[0]
+    let t = [Float](repeating: 0.7, count: B)
+    check("chain_v_cond", chain.dit(noise, t, ctx), try F("chain_v_cond"), tol: 1e-4)
+    check("chain_v_null", chain.dit(noise, t, broadcast(chain.dit.nullCtx, to: ctx.shape)), try F("chain_v_null"), tol: 1e-4)
+    let x = Flow.sample(chain.dit, ctx: ctx, noise: noise)
+    check("chain_sample", x, try F("chain_sample"), tol: 1e-3)
+
+    // decoding, on the reference's tokens
+    let refTok = try F("chain_sample")
+    let ref = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: "\(fx)/chains.json")!) as! [[[String: Any]]]
+    var worst = 0.0, same = true
+    let D = chain.tokenDim, N = ChainDiT.slots
+    let flat = refTok.asArray(Float.self)
+    for b in 0..<B {
+        let got = chain.decode(Array(flat[(b * N * D)..<((b + 1) * N * D)]))
+        if got.count != ref[b].count { same = false; continue }
+        for (g, r) in zip(got, ref[b]) {
+            let rj = r["joints"] as! [[NSNumber]]
+            if rj.count != g.joints.count { same = false; continue }
+            for (a, c) in zip(g.joints, rj) { for (p, q) in zip(a, c) { worst = max(worst, abs(p - q.doubleValue)) } }
+            for (a, c) in zip(g.path, r["path"] as! [[NSNumber]]) { for (p, q) in zip(a, c) { worst = max(worst, abs(p - q.doubleValue)) } }
+            worst = max(worst, abs(g.stiffness - (r["stiffness"] as! NSNumber).doubleValue))
+        }
+    }
+    let decOK = same && worst <= 1e-9
+    if !decOK { ok = false }
+    print(String(format: "%@ chains.json            chain and joint counts %@, max_abs %.3e (tol 1e-09)", decOK ? "ok  " : "FAIL", same ? "equal" : "DIFFER", worst))
+
+    // card VAE encoder and head-frame card tokens of generated cards
+    let meta = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: "\(fx)/meta.json")!) as! [String: Any]
+    let rows = (meta["rows"] as! [NSNumber]).map { $0.intValue }
+    let ks = (meta["k"] as! [NSNumber]).map { $0.doubleValue }
+    let bs = (meta["b"] as! [[NSNumber]]).map { $0.map { $0.doubleValue } }
+    let cards0 = try Cards.load(json: String(format: "%@/cards/%03d.json", fx, rows[0]))
+    let (px, lens) = HeadFrame.padSeqs(Array(cards0.prefix(192)).map { $0.seq }, L: model.vae.L, scale: Float(ks[0]))
+    check("enc_X", MLXArray(px, [lens.count, model.vae.L, 5]), try F("enc_X"), tol: 1e-8)
+    check("enc_u", MLXArray(HeadFrame.arcU(px, lens: lens, L: model.vae.L), [lens.count, model.vae.L]), try F("enc_u"), tol: 1e-5)
+    check("enc_latents", model.vae.encode(px, lens: lens), try F("enc_latents"), tol: 1e-4)
+    var toks: [Float] = []
+    for (i, r) in rows.enumerated() {
+        toks += HeadFrame.cardTokens(try Cards.load(json: String(format: "%@/cards/%03d.json", fx, r)), k: ks[i], b: bs[i], vae: model.vae, tokenizer: model.tokenizer)
+    }
+    check("enc_card_tokens", MLXArray(toks, [rows.count, 192, 40]), try F("enc_card_tokens"), tol: 1e-4)
+    print(String(format: "peak RSS %.2f GiB", peakRSSGiB()))
+    return ok
+}
+
+func chains() throws {
+    let out = need("--out")
+    let t0 = Date()
+    let model = try ChainModel(workspace: need("--workspace"))
+    let tLoad = Date().timeIntervalSince(t0)
+    let noise = try NPYReader.load(need("--noise"))
+    var rows: [Int] = []
+    var ctok: MLXArray
+    var tTok = 0.0
+    if let tp = opt("--tokens") {
+        ctok = try NPYReader.load(tp)
+        rows = (try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: need("--rows"))!) as! [NSNumber]).map { $0.intValue }
+    } else {
+        let run = need("--cards")
+        let fits = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: need("--fits"))!) as! [[String: Any]]
+        var flat: [Float] = []
+        let t = Date()
+        for f in fits {
+            let r = (f["row"] as! NSNumber).intValue
+            rows.append(r)
+            flat += HeadFrame.cardTokens(try Cards.load(json: String(format: "%@/JsonResults/%03d.json", run, r)), k: (f["k"] as! NSNumber).doubleValue,
+                                         b: (f["b"] as! [NSNumber]).map { $0.doubleValue }, vae: model.vae, tokenizer: model.tokenizer)
+        }
+        tTok = Date().timeIntervalSince(t)
+        ctok = MLXArray(flat, [rows.count, 192, 40])
+    }
+    precondition(noise.shape[0] == rows.count && ctok.shape[0] == rows.count, "noise, tokens and rows differ in count")
+    let t = Date()
+    let x = Flow.sample(model.chain.dit, ctx: model.chain.encodeCond(ctok), noise: noise)
+    let tSample = Date().timeIntervalSince(t)
+    let D = model.chain.tokenDim, N = ChainDiT.slots
+    let flat = x.asArray(Float.self)
+    var res: [String: Any] = [:]
+    var n = 0
+    for (j, r) in rows.enumerated() {
+        let cs = model.chain.decode(Array(flat[(j * N * D)..<((j + 1) * N * D)]))
+        n += cs.count
+        res[String(r)] = cs.map { $0.json }
+    }
+    try FileManager.default.createDirectory(atPath: out, withIntermediateDirectories: true)
+    try JSONSerialization.data(withJSONObject: res).write(to: URL(fileURLWithPath: "\(out)/chains_head.json"))
+    let H = Double(rows.count)
+    let timing: [String: Any] = ["rows": rows.count, "load_s": tLoad, "card_tokens_s_per_hairstyle": tTok / H, "sample_s_per_hairstyle": tSample / H,
+                                 "n_chains_mean": Double(n) / H, "peak_rss_gib": peakRSSGiB(), "mlx_peak_gib": Double(GPU.peakMemory) / Double(1 << 30)]
+    let td = try JSONSerialization.data(withJSONObject: timing, options: [.prettyPrinted, .sortedKeys])
+    try td.write(to: URL(fileURLWithPath: "\(out)/swift_timing.json"))
+    print(String(data: td, encoding: .utf8)!)
+}
+
 func run() throws {
     let out = need("--out")
     let plys = need("--plys")
@@ -178,6 +298,12 @@ do {
         let ok = flag("--gpu") ? try gate() : try Device.withDefaultDevice(.cpu) { try gate() }
         print(ok ? "GATE PASSED" : "GATE FAILED")
         exit(ok ? 0 : 1)
+    case "gate2":
+        let ok = flag("--gpu") ? try gate2() : try Device.withDefaultDevice(.cpu) { try gate2() }
+        print(ok ? "GATE PASSED" : "GATE FAILED")
+        exit(ok ? 0 : 1)
+    case "chains":
+        try chains()
     case "run":
         if flag("--cpu") { try Device.withDefaultDevice(.cpu) { try run() } } else { try run() }
     default:

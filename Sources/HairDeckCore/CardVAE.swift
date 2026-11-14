@@ -100,4 +100,36 @@ public struct CardVAE {
         }
         return out
     }
+
+    // MARK: encoder
+
+    /// One layer of the `nn.TransformerEncoder` (norm first, erf GELU, key-padding bias).
+    func encoderLayer(_ i: Int, _ x: MLXArray, _ bias: MLXArray) -> MLXArray {
+        let p = "enc.layers.\(i)"
+        let h = HDOps.ln(x, w, "\(p).norm1")
+        let qkv = HDOps.linear(h, w["\(p).self_attn.in_proj_weight"]!, w["\(p).self_attn.in_proj_bias"]!).split(parts: 3, axis: -1)
+        let a = HDOps.sdpa(HDOps.splitHeads(qkv[0], heads: heads), HDOps.splitHeads(qkv[1], heads: heads),
+                           HDOps.splitHeads(qkv[2], heads: heads), bias: bias)
+        let y = x + HDOps.lin(HDOps.mergeHeads(a), w, "\(p).self_attn.out_proj")
+        return y + HDOps.lin(HDOps.geluErf(HDOps.lin(HDOps.ln(y, w, "\(p).norm2"), w, "\(p).linear1")), w, "\(p).linear2")
+    }
+
+    /// `LoadedVAE.encode_padded`: root-relative padded cards x (C × L × 5 row-major, raw units) with
+    /// their lengths → posterior means [C, 32].
+    public func encode(_ x: [Float], lens: [Int]) -> MLXArray {
+        let C = lens.count
+        let u = MLXArray(HeadFrame.arcU(x, lens: lens, L: L), [C, L])
+        var m = [Float](repeating: 0, count: C * L)
+        for (j, n) in lens.enumerated() { for i in 0..<n { m[j * L + i] = 1 } }
+        let mask = MLXArray(m, [C, L])
+        let xn = (MLXArray(x, [C, L, 5]) - MLXArray(mu)) / MLXArray(sd) * mask.expandedDimensions(axis: -1)
+        var h = HDOps.lin(concatenated([xn, fourier(u)], axis: -1), w, "inp")
+        h = concatenated([broadcast(w["cls"]!, to: [C, 1, h.shape[2]]), h], axis: 1) + w["pe_enc"]!.expandedDimensions(axis: 0)
+        // the class token is always read; padded points never are
+        let keep = concatenated([MLXArray.ones([C, 1]), mask], axis: 1).expandedDimensions(axes: [1, 2])
+        let bias = which(keep .> 0, MLXArray(Float(0)), MLXArray(-Float.infinity))
+        for i in 0..<depth { h = encoderLayer(i, h, bias) }
+        let zdim = w["to_z.weight"]!.shape[0] / 2
+        return HDOps.lin(h[0..., 0], w, "to_z")[0..., 0..<zdim]
+    }
 }

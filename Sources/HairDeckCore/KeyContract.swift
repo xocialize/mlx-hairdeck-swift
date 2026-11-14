@@ -51,6 +51,31 @@ public enum KeyContract {
         return Set(k)
     }
 
+    /// The keys of the card VAE that encoding reads.
+    public static func cardVAEEncoder(depth: Int = 4) -> Set<String> {
+        var k = ["cls", "pe_enc", "inp.weight", "inp.bias", "to_z.weight", "to_z.bias"]
+        for i in 0..<depth {
+            let p = "enc.layers.\(i)"
+            k += ["\(p).self_attn.in_proj_weight", "\(p).self_attn.in_proj_bias"]
+            for m in ["self_attn.out_proj", "linear1", "linear2", "norm1", "norm2"] { k += ["\(p).\(m).weight", "\(p).\(m).bias"] }
+        }
+        return Set(k)
+    }
+
+    /// The chain DiT: the set DiT's keys at depth 8 with the card condition; the file also holds the
+    /// base class's unused `head_norm` / `head_proj`.
+    public static var chainDiT: Set<String> {
+        setDiT(depth: 8).union(["card_norm.weight", "card_norm.bias", "card_proj.weight", "card_proj.bias", "card_pos",
+                                "head_norm.weight", "head_norm.bias", "head_proj.weight", "head_proj.bias"])
+    }
+
+    public static func check(chain: String, vae: String) throws {
+        let c = try SafetensorsHeader.keys(chain)
+        guard c == chainDiT else { throw ContractError.mismatch("chain DiT keys differ: \(c.symmetricDifference(chainDiT).sorted().prefix(6))") }
+        let missing = cardVAEEncoder().subtracting(try SafetensorsHeader.keys(vae))
+        guard missing.isEmpty else { throw ContractError.mismatch("card VAE encoder keys missing: \(missing.sorted().prefix(6))") }
+    }
+
     /// Throws unless every key this port reads is in the files, the DiT file holds exactly the
     /// expected set, and the Dora file's `encoder.*` keys are exactly the expected set.
     public static func check(dora: String, dit: String, vae: String) throws {
