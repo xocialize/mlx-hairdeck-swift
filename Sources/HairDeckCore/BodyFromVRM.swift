@@ -30,6 +30,13 @@ public struct VRMBody {
     public var faceWidth: Double { faceMax.x - faceMin.x }
     public var anchor: SIMD3<Double> { SIMD3((faceMin.x + faceMax.x) / 2, faceMax.y, (faceMin.z + faceMax.z) / 2) }
 
+    /// Hair with no body: the model's own head frame, as an item on a bone named `Head` at the head
+    /// joint of the canonical head (HairDeck's avatar's head joint taken into the head frame).
+    public static var canonicalPlacement: BodyPlacement {
+        BodyPlacement(k: 1, b: SIMD3(0, 0, 0), s: 1, t: SIMD3(0, 0, 0), faceWidthDataset: canonicalFaceWidth,
+                      headJointDataset: SIMD3(0, 0.3622, 0.0015), headBone: "Head")
+    }
+
     /// The placement of head-frame hair on this body: dataset frame = the body's world.
     public var placement: BodyPlacement {
         let k = Self.canonicalFaceWidth / faceWidth
@@ -44,7 +51,12 @@ public struct VRMBody {
 
     /// The JSON chunk of a `.vrm` / `.glb`.
     public static func json(glb path: String) throws -> [String: Any] {
-        guard let d = FileManager.default.contents(atPath: path), d.count > 20 else { throw VRMError.bad("cannot read \(path)") }
+        guard let d = FileManager.default.contents(atPath: path) else { throw VRMError.bad("cannot read \(path)") }
+        return try json(glb: d, label: path)
+    }
+
+    public static func json(glb d: Data, label path: String = "<data>") throws -> [String: Any] {
+        guard d.count > 20 else { throw VRMError.bad("\(path): too short for a binary glTF") }
         let u32: (Int) -> Int = { o in Int(d.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: o, as: UInt32.self) }) }
         guard u32(0) == 0x46546C67, u32(16) == 0x4E4F534A else { throw VRMError.bad("\(path): not a binary glTF") }
         guard let o = try JSONSerialization.jsonObject(with: d.subdata(in: 20..<(20 + u32(12)))) as? [String: Any] else { throw VRMError.bad("\(path): bad JSON chunk") }
@@ -52,7 +64,13 @@ public struct VRMBody {
     }
 
     public init(vrm path: String, faceMeshPattern: String = "face") throws {
-        let g = try Self.json(glb: path)
+        guard let d = FileManager.default.contents(atPath: path) else { throw VRMError.bad("cannot read \(path)") }
+        try self.init(glb: d, label: path, faceMeshPattern: faceMeshPattern)
+    }
+
+    /// From the bytes of a `.vrm` / `.glb`.
+    public init(glb data: Data, label path: String = "<data>", faceMeshPattern: String = "face") throws {
+        let g = try Self.json(glb: data, label: path)
         let ext = g["extensions"] as? [String: Any] ?? [:]
         guard let nodes = g["nodes"] as? [[String: Any]] else { throw VRMError.bad("\(path): no nodes") }
         let head: Int

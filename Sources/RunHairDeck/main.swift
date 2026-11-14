@@ -119,9 +119,9 @@ func gate() throws -> Bool {
     check("dit_block0", dit.block(0, HDOps.lin(noise, dit.w, "inp"), c, ctx), try F("dit_block0"), tol: 1e-4)
     check("dit_v_cond", dit(noise, [0.7], ctx), try F("dit_v_cond"), tol: 1e-4)
     check("dit_v_null", dit(noise, [0.7], dit.nullCtx), try F("dit_v_null"), tol: 1e-4)
-    check("sample_tokens_4step", Flow.sample(dit, ctx: ctx, noise: noise, steps: 4), try F("sample_tokens_4step"), tol: 1e-3)
+    check("sample_tokens_4step", try Flow.sample(dit, ctx: ctx, noise: noise, steps: 4), try F("sample_tokens_4step"), tol: 1e-3)
     let t0 = Date()
-    let tokens = Flow.sample(dit, ctx: ctx, noise: noise, steps: 50)
+    let tokens = try Flow.sample(dit, ctx: ctx, noise: noise, steps: 50)
     check("sample_tokens", tokens, try F("sample_tokens"), tol: 1e-2)
     print(String(format: "     50 steps, CFG 2, one hairstyle: %.1f s", Date().timeIntervalSince(t0)))
 
@@ -186,7 +186,7 @@ func gate2() throws -> Bool {
     let t = [Float](repeating: 0.7, count: B)
     check("chain_v_cond", chain.dit(noise, t, ctx), try F("chain_v_cond"), tol: 1e-4)
     check("chain_v_null", chain.dit(noise, t, broadcast(chain.dit.nullCtx, to: ctx.shape)), try F("chain_v_null"), tol: 1e-4)
-    let x = Flow.sample(chain.dit, ctx: ctx, noise: noise)
+    let x = try Flow.sample(chain.dit, ctx: ctx, noise: noise)
     check("chain_sample", x, try F("chain_sample"), tol: 1e-3)
 
     // decoding, on the reference's tokens
@@ -325,7 +325,7 @@ func gate4() throws -> Bool {
     let noise = try F("noise_seed0")
     check("img_v_cond", m.image.dit(noise, [0.7], ctx), try F("img_v_cond"), tol: 1e-4)
     check("img_v_null", m.image.dit(noise, [0.7], m.image.dit.nullCtx), try F("img_v_null"), tol: 1e-4)
-    let x = Flow.sample(m.image.dit, ctx: ctx, noise: noise)
+    let x = try Flow.sample(m.image.dit, ctx: ctx, noise: noise)
     check("img_sample", x, try F("img_sample"), tol: 1e-3)
     let refX = try F("img_sample")
     let cards = Cards.fromTokens(refX, tokenizer: m.tokenizer, vae: m.vae)[0]
@@ -371,7 +371,7 @@ func gate4() throws -> Bool {
     print(String(format: "%@ col_srgb             %d values, max_abs %.3e (tol 1e-04: one step of the 4-decimal rounding)", sOK ? "ok  " : "FAIL", n, sw))
 
     // ---- chains from the image-model tokens
-    let cx = Flow.sample(m.chains.chain.dit, ctx: m.chains.chain.encodeCond(try F("chain_clean_tokens")), noise: try F("chain_noise"))
+    let cx = try Flow.sample(m.chains.chain.dit, ctx: m.chains.chain.encodeCond(try F("chain_clean_tokens")), noise: try F("chain_noise"))
     check("chain_sample", cx, try F("chain_sample"), tol: 1e-3)
     print(String(format: "peak RSS %.2f GiB", peakRSSGiB()))
     return ok
@@ -403,61 +403,27 @@ func imageHair() throws {
         }
         if !matte.contains(1) { matte = [Float](repeating: 1, count: matte.count) }
     }
-    for i in 0..<rgb.count { rgb[i] = Float(inputBytes[i]) }
+    _ = rgb
+    var vrm0 = false
+    var body: BodyPlacement? = nil
+    if let vp = opt("--vrm") { let v = try VRMBody(vrm: vp); body = v.placement; vrm0 = v.isVRM0 } else if let bp = opt("--body") { body = try BodyPlacement(json: bp) }
     let seed = UInt64(opt("--seed") ?? "0")!
-    var t = Date()
-    let rgbA = MLXArray(rgb, [1, 448, 448, 3])
-    let tokens = m.dino(DINOv3.normalise(rgbA))
-    eval(tokens)
-    let tDino = Date().timeIntervalSince(t)
-    t = Date()
-    // the noise: a file (the reference's, for a sample-for-sample comparison) or MLX's generator
-    let noise = try opt("--noise").map { try NPYReader.load($0) } ?? MLXRandom.normal([1, 192, 40], key: MLXRandom.key(seed))
-    let x = Flow.sample(m.image.dit, ctx: m.image.encodeCond(tokens), noise: noise)
-    let tSample = Date().timeIntervalSince(t)
-    t = Date()
-    let cards = Cards.fromTokens(x, tokenizer: m.tokenizer, vae: m.vae)[0]
-    let cleaned = m.tokenizer.clean(x.asArray(Float.self))
-    var colours: [[[Double]]]? = nil
-    if !flag("--no-colours") && !cards.isEmpty {
-        let lab = m.color(MLXArray(m.tokenizer.signNormals(cleaned), [1, 192, 40]),
-                          m.color.encodeCtx(tokens, rgb: rgbA, matte: MLXArray(matte, [1, 448, 448]))).asArray(Float.self)
-        let slots = (0..<192).filter { cleaned[$0 * 40 + 39] > 0 }
-        colours = slots.map { s in (0..<16).map { b in
-            let o = (s * 16 + b) * 3
-            return ColorDiT.labToSRGB([Double(lab[o]), Double(lab[o + 1]), Double(lab[o + 2])]).map { ($0 * 10000).rounded(.toNearestOrEven) / 10000 }
-        } }
-    }
-    let tColour = Date().timeIntervalSince(t)
-    t = Date()
-    var chains: [ChainDiT.Chain] = []
-    if !flag("--no-chains") {
-        let cn = MLXRandom.normal([1, ChainDiT.slots, m.chains.chain.tokenDim], key: MLXRandom.key(seed))
-        let cx = Flow.sample(m.chains.chain.dit, ctx: m.chains.chain.encodeCond(MLXArray(cleaned, [1, 192, 40])), noise: cn)
-        chains = m.chains.chain.decode(cx.asArray(Float.self))
-    }
-    let tChains = Date().timeIntervalSince(t)
+    let r = try HairDeckPipeline.imageHair(m, modelInput: inputBytes, matteCrop: matte, body: body, vrm0Axes: vrm0, seed: seed,
+                                           noise: try opt("--noise").map { try NPYReader.load($0) }, springs: !flag("--no-chains"), colours: !flag("--no-colours"))
     if let dir = opt("--save") {
         try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        var obj = cards.map { ["shape": $0.triangle ? "triangle" : "square", "seq": $0.seq] as [String: Any] }
-        if let colours { for i in 0..<obj.count { obj[i]["colors"] = colours[i] } }
+        var obj = r.cards.map { ["shape": $0.triangle ? "triangle" : "square", "seq": $0.seq] as [String: Any] }
+        if let c = r.colours { for i in 0..<obj.count { obj[i]["colors"] = c[i] } }
         try JSONSerialization.data(withJSONObject: obj).write(to: URL(fileURLWithPath: "\(dir)/cards_head.json"))
-        try JSONSerialization.data(withJSONObject: chains.map { $0.json }).write(to: URL(fileURLWithPath: "\(dir)/chains_head.json"))
-        try HDIO.writeNPY(x, to: "\(dir)/tokens.npy")
-        try writePNG(inputBytes, 448, 448, channels: 3, to: "\(dir)/model_input.png")
+        try JSONSerialization.data(withJSONObject: r.chains.map { $0.json }).write(to: URL(fileURLWithPath: "\(dir)/chains_head.json"))
+        try HDIO.writeNPY(r.tokens, to: "\(dir)/tokens.npy")
+        try writePNG(r.modelInput, 448, 448, channels: 3, to: "\(dir)/model_input.png")
     }
-    var vrm0 = false
-    let body: BodyPlacement
-    if let vp = opt("--vrm") { let v = try VRMBody(vrm: vp); body = v.placement; vrm0 = v.isVRM0 } else { body = try BodyPlacement(json: need("--body")) }
-    t = Date()
-    let rig = HairRig.build(cards: cards, chains: chains.map { (joints: $0.joints, stiffness: $0.stiffness) }, body: body)
-    let (data, s) = HairItem.glb(rig, headBone: body.headBone, headJoint: body.headJointWorld, cardColours: colours, headRotation: body.headRotation, vrm0Axes: vrm0)
-    try data.write(to: URL(fileURLWithPath: need("--out")))
-    let tItem = Date().timeIntervalSince(t)
-    print("wrote \(need("--out")): \(data.count) bytes, \(cards.count) cards, \(chains.count) chains generated (\(rig.chains.count) used), \(s.vertices) vertices, "
-          + "\(s.springs) springs, colours \(colours == nil ? "one" : "per card")")
+    try r.glb.write(to: URL(fileURLWithPath: need("--out")))
+    print("wrote \(need("--out")): \(r.glb.count) bytes, \(r.cards.count) cards, \(r.chains.count) chains generated (\(r.chainsUsed) used), \(r.summary.vertices) vertices, "
+          + "\(r.summary.springs) springs, colours \(r.colours == nil ? "one" : "per card")\(body == nil ? ", no body: the model's head frame" : "")")
     print(String(format: "load %.1f s | DINOv3 %.2f s, image DiT %.2f s, decode + colours %.2f s, chains %.2f s, rig + glb %.2f s | peak MLX %.2f GiB, peak RSS %.2f GiB",
-                 tLoad, tDino, tSample, tColour, tChains, tItem, Double(GPU.peakMemory) / Double(1 << 30), peakRSSGiB()))
+                 tLoad, r.seconds[0], r.seconds[1], r.seconds[2], r.seconds[3], r.seconds[4], Double(GPU.peakMemory) / Double(1 << 30), peakRSSGiB()))
 }
 
 func writePNG(_ px: [UInt8], _ w: Int, _ h: Int, channels: Int, to path: String) throws {
@@ -583,7 +549,7 @@ func chains() throws {
     }
     precondition(noise.shape[0] == rows.count && ctok.shape[0] == rows.count, "noise, tokens and rows differ in count")
     let t = Date()
-    let x = Flow.sample(model.chain.dit, ctx: model.chain.encodeCond(ctok), noise: noise)
+    let x = try Flow.sample(model.chain.dit, ctx: model.chain.encodeCond(ctok), noise: noise)
     let tSample = Date().timeIntervalSince(t)
     let D = model.chain.tokenDim, N = ChainDiT.slots
     let flat = x.asArray(Float.self)
@@ -631,7 +597,7 @@ func run() throws {
         tCond += Date().timeIntervalSince(t)
         t = Date()
         let ctx = model.dit.encodeCond(concatenated(conds, axis: 0))
-        let tok = Flow.sample(model.dit, ctx: ctx, noise: noise[rows[0]..<(rows.last! + 1)])
+        let tok = try Flow.sample(model.dit, ctx: ctx, noise: noise[rows[0]..<(rows.last! + 1)])
         tSample += Date().timeIntervalSince(t)
         t = Date()
         let hairs = Cards.fromTokens(tok, tokenizer: model.tokenizer, vae: model.vae)

@@ -60,7 +60,14 @@ public enum HDIO {
 
     /// An image file as 8-bit RGBA rows, top to bottom (sRGB values as stored; alpha not premultiplied).
     public static func readRGBA(_ path: String) throws -> (pixels: [UInt8], width: Int, height: Int) {
-        guard let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+        guard let d = FileManager.default.contents(atPath: path) else { throw IOError.bad("cannot read image \(path)") }
+        return try readRGBA(data: d, label: path)
+    }
+
+    /// As `readRGBA(_:)`, from encoded image bytes (PNG, JPEG, …). The alpha comes back straight
+    /// (un-premultiplied), so a cut-out picture's alpha can serve as its matte.
+    public static func readRGBA(data: Data, label path: String = "<data>") throws -> (pixels: [UInt8], width: Int, height: Int) {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil),
               let img = CGImageSourceCreateImageAtIndex(src, 0, nil) else { throw IOError.bad("cannot read image \(path)") }
         let w = img.width, h = img.height
         var px = [UInt8](repeating: 0, count: w * h * 4)
@@ -74,6 +81,11 @@ public enum HDIO {
             return true
         }
         guard ok else { throw IOError.bad("cannot decode image \(path)") }
+        // the context holds premultiplied values: back to straight alpha
+        for i in 0..<(w * h) {
+            let a = Int(px[i * 4 + 3])
+            if a != 0 && a != 255 { for c in 0..<3 { px[i * 4 + c] = UInt8(min(255, (Int(px[i * 4 + c]) * 255 + a / 2) / a)) } }
+        }
         return (px, w, h)
     }
 

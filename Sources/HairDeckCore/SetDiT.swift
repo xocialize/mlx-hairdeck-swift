@@ -101,7 +101,7 @@ public enum Flow {
 
     /// noise [B, N, 40], ctx [B, 512, 768] → tokens [B, N, 40]. `onStep` runs after every step.
     public static func sample(_ model: SetDiT, ctx: MLXArray, noise: MLXArray, steps: Int = 50, cfg: Float = 2.0,
-                              onStep: ((Int) -> Void)? = nil) -> MLXArray {
+                              onStep: (Int) throws -> Void = { _ in }) rethrows -> MLXArray {
         let B = noise.shape[0]
         let ts = timesteps(steps)
         let both = concatenated([ctx, broadcast(model.nullCtx, to: ctx.shape)], axis: 0)
@@ -117,7 +117,7 @@ public enum Flow {
             }
             x = x + (tn - t) * v
             eval(x)
-            onStep?(i)
+            try onStep(i)
         }
         return x
     }
