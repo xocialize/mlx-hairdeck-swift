@@ -1,7 +1,8 @@
 # mlx-hairdeck-swift
 
 Swift-MLX port of [HairDeck](https://github.com/hyz317/HairDeck) (Apache-2.0): hair as a set of card tokens for
-anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
+anime-style avatars. Released as an MLXEngine package (`HairDeckKit`, capability `characterPart`); plan AB-P-0012 on the
+bridge.
 
 ## Status
 
@@ -11,7 +12,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
 | P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
 | P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b: picture + matte + head box → coloured hair item in one call, model input bit-exact; the head box comes from the caller (decision 2026-11-13), the matte from a matting model outside this package |
-| P5 | MLXEngine `ModelPackage`, conformance, weights repo, Gaea plugin | `HairDeckKit`: the `characterPart` package (contract 1.63.0) — offline conformance green, engine-driven run byte-identical to the CLI, weights download into a clean store (2026-11-13). Open: the footprint through the memory harness, the Gaea plugin (after `mesh.generate_part`, AB-T-0482) |
+| P5 | MLXEngine `ModelPackage`, conformance, weights repo, Gaea plugin | `HairDeckKit`: the `characterPart` package (contract 1.63.0) — offline conformance green, engine-driven run byte-identical to the CLI, weights download into a clean store (2026-11-13). footprint measured; the Gaea plugin is `xocialize-code/gaea-plugin-hairdeck` |
 
 ## P1 results
 
@@ -158,8 +159,8 @@ or to place on a body.
 - First use on an empty model store: `prepare()` downloads `xocialize/hairdeck-mlx` (the image path's five files) and
   `dino.safetensors` of `xocialize/trellis2-mlx` — 2.6 GB in 76 s here — and the result is again the same bytes. The
   weights repo is public; no token is needed.
-- Declared footprint (one float32 tier): 2.9 GB resident + 1.3 GB peak activation, from the in-process peak; the
-  engine's memory harness has not been run on it yet.
+- Footprint (one float32 tier), measured through the engine by the memory-harness method: 2.83 GB resident, 4.36 GB
+  peak over five runs, phys_footprint peak 5.23 GB; declared 2.9 GB resident + 2.6 GB activation = 5.5 GB.
 
 ## Use
 

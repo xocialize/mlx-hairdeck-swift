@@ -36,13 +36,15 @@ public final class HairDeckPackage: ModelPackage {
             license: LicenseDeclaration(weightLicense: .dinov3, portCodeLicense: .mit),
             provenance: Provenance(sourceRepo: "hyz317/HairDeck", revision: "cb20f70", tier: 3),
             requirements: RequirementsManifest(
-                // Measured in-process (RunHairDeck image-hair, release, GPU, M-series Mac Studio,
-                // mlx-swift 0.33.0; AB-R-0850): peak MLX memory 3.76–3.80 GiB over a run. Resident =
-                // the float32 weights the image path holds (DINOv3 1.21 GB, image and colour DiTs
-                // 0.73 GB each, chain DiT 0.12 GB, card VAE 0.03 GB = 2.83 GB); the rest of the peak
-                // is activation (DiT at batch 2 over 192 tokens × 789 context). To be re-measured
-                // through the engine's memory harness before the registry row.
-                footprints: [QuantFootprint(quant: .fp32, residentBytes: 2_900_000_000, peakActivationBytes: 1_300_000_000)],
+                // Measured through the engine (`MEASURE=5 RunHairDeckEngine`, release, GPU, Mac Studio 128 GB,
+                // mlx-swift 0.33.0, 2026-11-14; AB-R-0855) by the memory-harness method, on the one
+                // workload the model has (a 448 px crop, 192 card tokens, colours and chains on):
+                // resident 2.83 GB (MLX active memory with the cache cleared: DINOv3 1.21 GB, image and
+                // colour DiTs 0.73 GB each, chain DiT 0.12 GB, card VAE 0.03 GB); peak over five runs
+                // 4.36 GB, so 1.53 GB of activation; the process's phys_footprint peaked at 5.23 GB.
+                // Declared: 2.9 GB resident + 2.6 GB activation = 5.5 GB, the harness's rule
+                // (peak × 1.2 + 256 MB = 5.49 GB), which also covers the phys_footprint peak.
+                footprints: [QuantFootprint(quant: .fp32, residentBytes: 2_900_000_000, peakActivationBytes: 2_600_000_000)],
                 requiredBackends: [.metalGPU],
                 os: OSRequirement(minMacOS: SemanticVersion(major: 26, minor: 0, patch: 0)),
                 chipFloor: .base),
