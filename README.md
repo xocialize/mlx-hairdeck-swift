@@ -63,7 +63,8 @@ on a joint's bisector and picks the other of its two segments (the same binding:
 The hair item (`HairItem.glb`, 1.8 MB for this hairstyle): `inspect-vrm.mjs` reports no problems (11 springs, 55 spring
 joints, 45 skin joints). In three.js 0.162 with `@pixiv/three-vrm-springbone` 3.5.5 (`tools/check_hair_item.mjs`) it loads
 as a skinned mesh (weights sum to 1 within 3e-8) and under a 50° head turn the chain ends lag by up to 0.29 m and
-are back at rest after 2.5 s. Rendered on the avatar in Blender (`tools/render_hair_item.py`):
+are back at rest after 2.5 s. A hair item from the repo's own fixture (`Fixtures/p3`), rendered on HairDeck's avatar in
+Blender (`tools/render_hair_item.py`):
 
 ![hair item on the avatar](docs/p3_hair_item_on_avatar.jpg)
 
