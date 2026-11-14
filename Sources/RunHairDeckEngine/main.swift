@@ -8,7 +8,8 @@ import MLXToolKit
 // RunHairDeckEngine — HairDeck driven through MLXServeEngine: register (licence gate, device
 // eligibility) → prepare (admission, load) → run → the hair item.
 //
-// Env: IMAGE (a cut-out PNG, or any picture with MATTE), BOX "x0,y0,x1,y1" (pixels), BODY (a .vrm / .glb,
+// Env: IMAGE (a cut-out PNG, or any picture with MATTE), BOX "x0,y0,x1,y1" (pixels: the box around the hair and the
+//      face; the package squares it and adds its 8 % margin, unlike RunHairDeck image-hair's --box, which is the crop), BODY (a .vrm / .glb,
 //      optional), OUT (the .glb), SEED (default 0), MATTE (a matte PNG for an opaque picture, standing in
 //      for the host's matting), WEIGHTS_DIR (a folder with the snapshot's files and dino.safetensors) or
 //      MODELS_ROOT (the engine's model store; prepare() downloads what is missing there).

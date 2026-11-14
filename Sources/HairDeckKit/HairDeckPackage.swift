@@ -52,8 +52,8 @@ public final class HairDeckPackage: ModelPackage {
             surfaces: [CharacterPartContract.descriptor(
                 name: "hairdeck",
                 summary: "Anime-style hair for an avatar from one character picture: hair cards with per-card colours and "
-                       + "spring-bone chains (VRMC_springBone), as a skinned GLB item. Needs the head box (hair and face) in "
-                       + "the picture's pixels. With a body (a VRM or rigged GLB with a face mesh and a humanoid head bone) "
+                       + "spring-bone chains (VRMC_springBone), as a skinned GLB item. Needs the head box in the picture's "
+                       + "pixels: the box around all of the hair and the face (the package squares it and adds a margin). With a body (a VRM or rigged GLB with a face mesh and a humanoid head bone) "
                        + "the item is placed on its head and skinned to that bone; without one it comes back in the model's "
                        + "own head frame. An opaque picture needs the host's matting; a cut-out picture's alpha is used as is.",
                 controls: controls)])
@@ -133,8 +133,11 @@ public final class HairDeckPackage: ModelPackage {
             vrm0 = b.isVRM0
         }
         try Task.checkCancellation()
+        // `subjectBox` is the box around the hair and the face. The model's input is the square around it
+        // with an 8 % margin, which may reach past the picture (white there), as the reference crops.
+        let crop = ModelInput.headBox(hair: box.map(Double.init), face: nil) ?? box.map(Double.init)
         let r = try HairDeckPipeline.imageHair(
-            model, rgb: rgb, matte: matte, width: pic.width, height: pic.height, box: box.map(Double.init),
+            model, rgb: rgb, matte: matte, width: pic.width, height: pic.height, box: crop,
             body: placement, vrm0Axes: vrm0, seed: req.seed ?? UInt64.random(in: 0...UInt64(UInt32.max)),
             springs: req.springBones ?? true, colours: req.colors ?? true,
             checkpoint: { try Task.checkCancellation() })

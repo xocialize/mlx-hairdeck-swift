@@ -146,7 +146,8 @@ less than with another seed.
 
 `HairDeckKit` wraps the image path as an MLXEngine `ModelPackage` on the `characterPart` capability (mlx-engine-swift
 0.78.0, contract 1.63.0, AB-A-0277): `CharacterPartRequest(image:, subjectBox: [x0, y0, x1, y1], body:, seed:,
-springBones:, colors:)` → `CharacterPartResponse(mesh:, part: .hair, fittedToBody:)`. With a body the item is placed on
+springBones:, colors:)` (`subjectBox` is the box around the hair and the face; the package squares it and adds the
+reference's 8 % margin to get the model's crop) → `CharacterPartResponse(mesh:, part: .hair, fittedToBody:)`. With a body the item is placed on
 its head; without one it comes back in the model's own head frame. A picture with transparency is used as it is cut
 out; an opaque one needs the host's matting (`HairDeckConfiguration.matting`, the Trellis2 pattern) and is refused with
 the reason otherwise. The point-cloud path is not a surface of the package: a bare cloud has no head to hang chains on
