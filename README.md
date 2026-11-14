@@ -187,6 +187,15 @@ with the reference sample for sample. `chains` needs each row's head fit (`FITS.
 p_head = k · p + b) and writes the chains in the head frame to `CHAINS/chains_head.json`; it also needs
 `ckpt/chain_model`, `data/spring/chain_stats_head.json`, `data/token_stats_head.json`.
 
+## Fixtures
+
+The parity fixtures in `Fixtures/` are made by the PyTorch reference from the repo's own material: `pictures/girl.png`
+(an original character, Z-Image Turbo through Gaea) and `pictures/girl_hair.ply` (10,000 points scanned from the hair
+generated from that picture, `tools/make_own_cloud.py`). The numbers quoted above were first measured on HairDeck's and
+CHARM's test data, which are not in this repository (CHARM's point clouds are GPL-3.0); every gate passes the same
+way on the fixtures here. The chain fixtures also use card tokens of HairDeck's released test set (Apache-2.0), and
+`p4b/ex*_box.json` are the reference's boxes for HairDeck's twelve demo pictures, as numbers.
+
 ## Licences
 
 Port code: MIT. HairDeck code and checkpoints: Apache-2.0. Dora-VAE 1.1 code and weights: Apache-2.0. DINOv3 weights:

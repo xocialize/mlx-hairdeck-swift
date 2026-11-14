@@ -1,7 +1,8 @@
 """P1 parity fixtures from the PyTorch reference (HairDeck, CPU, fp32, no autocast).
 
   source /Volumes/Satechi/charm/HairDeck/hairdeck_env.sh
-  HAIRDECK_DEVICE=cpu python tools/dump_p1_fixtures.py Fixtures/p1 [--row 0]
+  HAIRDECK_DEVICE=cpu python tools/dump_p1_fixtures.py Fixtures/p1 --ply Fixtures/pictures/girl_hair.ply
+  (--row N instead: CHARM's test point cloud N, which is GPL-3.0 data and is not kept in this repo)
 
 Writes .npy (float32 / int32, C order) for: the Dora encoder (points, FPS indices, intermediate and final tokens), one
 set-DiT forward (conditional and null), the full Euler-50 CFG-2 sampling from seeded CPU noise, the card VAE decoder
@@ -29,6 +30,7 @@ from hairdeck.sampling.flow import fm_sample  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument('out')
 ap.add_argument('--row', type=int, default=0)
+ap.add_argument('--ply', default='', help='a condition point cloud (hair_reform.ply layout) instead of a CHARM test row')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
 device = str(dev.select(None))
@@ -43,7 +45,7 @@ def save(name, x, dtype=np.float32):
 
 
 # ------------------------------------------------------------------ Dora encoder
-pts = torch.from_numpy(condition_points(condition_plys('test')[a.row]))[None]  # [1, 10000, 6]
+pts = torch.from_numpy(condition_points(a.ply or condition_plys('test')[a.row]))[None]  # [1, 10000, 6]
 save('dora_points', pts)
 m = dora.build_dora(device=device)
 ic, is_ = m.query_indices(pts, pts, 256)
