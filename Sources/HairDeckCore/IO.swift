@@ -1,4 +1,6 @@
+import CoreGraphics
 import Foundation
+import ImageIO
 import MLX
 
 /// File inputs and outputs of the point-cloud path that are not model weights.
@@ -54,6 +56,25 @@ public enum HDIO {
         data.append(Data(dict.utf8))
         vals.withUnsafeBufferPointer { data.append(Data(buffer: $0)) }
         try data.write(to: URL(fileURLWithPath: path))
+    }
+
+    /// An image file as 8-bit RGBA rows, top to bottom (sRGB values as stored; alpha not premultiplied).
+    public static func readRGBA(_ path: String) throws -> (pixels: [UInt8], width: Int, height: Int) {
+        guard let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+              let img = CGImageSourceCreateImageAtIndex(src, 0, nil) else { throw IOError.bad("cannot read image \(path)") }
+        let w = img.width, h = img.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        // draw into the image's own colour space, so the stored values come back unchanged
+        let space = img.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        let ok = px.withUnsafeMutableBytes { buf -> Bool in
+            guard let ctx = CGContext(data: buf.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.interpolationQuality = .none
+            ctx.draw(img, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard ok else { throw IOError.bad("cannot decode image \(path)") }
+        return (px, w, h)
     }
 
     static func floats(_ any: Any?) -> [Float] { (any as? [Any] ?? []).map { ($0 as! NSNumber).floatValue } }
@@ -127,5 +148,33 @@ extension Cards {
             out.append(HairCard(seq: rows, triangle: (c["shape"] as? String) == "triangle"))
         }
         return out
+    }
+}
+
+/// The released files of the image path in a HairDeck workspace: DINOv3, the image DiT, the colour
+/// model, the chain model, the card VAE and the head-frame statistics.
+public struct ImagePathModel {
+    public let dino: DINOv3
+    public let image: ImageDiT
+    public let color: ColorDiT
+    public let chains: ChainModel
+    public var vae: CardVAE { chains.vae }
+    public var tokenizer: CardTokenizer { chains.tokenizer }
+
+    public init(workspace root: String) throws {
+        let dinoPath = "\(root)/third_party/weights/dinov3/model.safetensors"
+        let missing = DINOv3.keys.subtracting(try SafetensorsHeader.keys(dinoPath))
+        guard missing.isEmpty else { throw KeyContract.ContractError.mismatch("DINOv3 keys missing: \(missing.sorted().prefix(6))") }
+        dino = DINOv3(weights: try Weights.load(dinoPath).filter { DINOv3.keys.contains($0.key) })
+        let imgPath = "\(root)/ckpt/image_model/model.safetensors", colPath = "\(root)/ckpt/color_model/model.safetensors"
+        let want = KeyContract.setDiT().union(["ctx_pos"])
+        let ik = try SafetensorsHeader.keys(imgPath)
+        guard ik == want else { throw KeyContract.ContractError.mismatch("image DiT keys differ: \(ik.symmetricDifference(want).sorted().prefix(6))") }
+        let wantCol = Set(want.map { "dit." + $0 }).union(["patch.weight", "patch.bias", "col_ada.weight", "col_ada.bias", "col_out.weight", "col_out.bias", "mu", "sd"])
+        let ck = try SafetensorsHeader.keys(colPath)
+        guard ck == wantCol else { throw KeyContract.ContractError.mismatch("colour model keys differ: \(ck.symmetricDifference(wantCol).sorted().prefix(6))") }
+        image = ImageDiT(weights: try Weights.load(imgPath))
+        color = ColorDiT(weights: try Weights.load(colPath))
+        chains = try ChainModel(workspace: root)
     }
 }

@@ -10,7 +10,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 | P1 | point cloud → Dora-VAE 1.1 encoder → point-cloud set DiT (Euler 50, CFG 2) → card VAE decoder → cards | parity gate passed, Table 1 reproduced (2026-11-13) |
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
 | P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
-| P4 | image path (SAM 3, BiRefNet, DINOv3, image DiT, colour model) | not started |
+| P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b not started |
 | P5 | MLXEngine `ModelPackage`, conformance, weights repo | not started |
 
 ## P1 results
@@ -81,6 +81,25 @@ Not in the item: the body's colliders (so HairDeck's rule that keeps the scalp p
 collider is not applied; Spec has none), and per-card colours (P4). The face mesh is found by name (`face`), which
 holds for VRoid models.
 
+## P4a results
+
+Parity against PyTorch (CPU, fp32; `tools/dump_p4_fixtures.py` → `Fixtures/p4`, demo image ex01), max abs: DINOv3 RoPE
+4.6e-7, patch embedding 2.6e-5, block 0 2.5e-8 relative, final tokens 3.9e-3 (they are rounded to bfloat16; one step);
+image DiT forward 5.2e-6, 50-step sample 8.3e-6, 89 cards equal to 1.8e-7; colour context 3.1e-6, colour output
+3.7e-6, Lab 8.0e-5, the 4-decimal sRGB values equal; chains from the image tokens 1.2e-6.
+
+End to end from a 448 × 448 model input (`RunHairDeck image-hair`, GPU): DINOv3 0.33 s, image DiT 1.39 s, decoding
+and colours 0.80 s, chains 1.11 s, rig and `.glb` 0.01 s; peak MLX memory 3.8 GiB. The PyTorch reference on this Mac
+(MPS) takes 4.7 + 2.3 + 1.8 s for the same stages, after 21.1 s of preprocessing (SAM 3 13.3 s, BiRefNet 7.2 s).
+The demo image and the generated hair with its per-card colours on Spec:
+
+![image to hair on Spec](docs/p4_image_to_hair_on_spec.jpg)
+
+Per-card colours travel as a small texture (one 8-pixel column per card, 18 rows), used as the base colour and the
+MToon shade texture. Not yet in Swift: the preprocessing that makes the model input from a picture (the person
+matte and the head crop) — the crop above comes from the reference's preprocessing, and the matte handed to the
+colour model was "not white".
+
 ## Use
 
 Needs a HairDeck workspace with the released files (`scripts/setup/download_weights.py --only hairdeck dora`):
@@ -94,6 +113,8 @@ swift run -c release RunHairDeck chains --workspace HAIRDECK_ROOT --cards RUN --
 swift run -c release RunHairDeck gate3 --fixtures Fixtures/p3
 swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.json --vrm BODY.vrm --out HAIR.glb
 swift run -c release RunHairDeck body --vrm BODY.vrm
+swift run -c release RunHairDeck gate4 --workspace HAIRDECK_ROOT --fixtures Fixtures/p4
+swift run -c release RunHairDeck image-hair --workspace HAIRDECK_ROOT --crop MODEL_INPUT.png --vrm BODY.vrm --out HAIR.glb
 ```
 
 `run` reads `DIR/{idx:03d}.ply` (10,000 points with normals, the `hair_reform.ply` format) and writes CHARM-format
@@ -104,5 +125,7 @@ p_head = k · p + b) and writes the chains in the head frame to `CHAINS/chains_h
 
 ## Licences
 
-Port code: MIT. HairDeck code and checkpoints: Apache-2.0. Dora-VAE 1.1 code and weights: Apache-2.0.
+Port code: MIT. HairDeck code and checkpoints: Apache-2.0. Dora-VAE 1.1 code and weights: Apache-2.0. DINOv3 weights:
+DINOv3 License (attribution "Built with DINOv3" where the image path is shown); `DINOv3.swift` is lifted from
+mlx-trellis2-swift (same author).
 `NPYReader`, `SafetensorsHeader`, `Weights` and the base of `Ops` come from mlx-skintokens-swift (MIT, same author).

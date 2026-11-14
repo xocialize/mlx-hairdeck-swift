@@ -1,5 +1,8 @@
+import CoreGraphics
 import Foundation
+import ImageIO
 import simd
+import UniformTypeIdentifiers
 
 /// A hair item as a binary glTF (`.glb`): the skinned hair mesh of a `HairRig.Rig` on its own small
 /// skeleton, with a `VRMC_springBone` block. It replaces the Blender step of HairDeck's VRM export
@@ -32,7 +35,39 @@ public enum HairItem {
         public var vertices = 0, triangles = 0, bones = 0, springs = 0, threeInfluences = 0, headOnly = 0
     }
 
-    public static func glb(_ rig: HairRig.Rig, headBone: String, headJoint: HairRig.V3,
+    /// Per-card colours as a texture (`hairdeck/vrm/prep.py: color_atlas`): colours per card (B × 3,
+    /// sRGB 0..1, root to tip) → an RGB image of B + 2 rows (top to bottom: the tip colour, the B
+    /// colours from tip to root, the root colour again) and `px` columns per card.
+    static func colourAtlas(_ colours: [[[Double]]], px: Int = 8) -> (png: Data, width: Int, height: Int) {
+        let n = colours.count, B = colours[0].count
+        let W = px * n, H = B + 2
+        var rgba = [UInt8](repeating: 255, count: W * H * 4)
+        for c in 0..<n {
+            for row in 0..<H {
+                // row 0 is the tip: colour index from the tip, with the two ends repeated
+                let b = min(max(B - row, 0), B - 1)
+                for x in 0..<px {
+                    let o = (row * W + c * px + x) * 4
+                    for a in 0..<3 { rgba[o + a] = UInt8((min(max(colours[c][b][a], 0), 1) * 255).rounded(.toNearestOrEven)) }
+                }
+            }
+        }
+        let provider = CGDataProvider(data: Data(rgba) as CFData)!
+        let img = CGImage(width: W, height: H, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: W * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                          bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue), provider: provider, decode: nil,
+                          shouldInterpolate: false, intent: .defaultIntent)!
+        let out = NSMutableData()
+        let dst = CGImageDestinationCreateWithData(out, UTType.png.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(dst, img, nil)
+        CGImageDestinationFinalize(dst)
+        return (out as Data, W, H)
+    }
+
+    /// cardColours: per card (in the order of the rig's cards) its colours from root to tip, sRGB
+    /// 0..1 — written as a texture, the UVs moved into the card's column of it (u into the middle
+    /// half of the column, v so that colour b sits at the centre of its row); without them the one
+    /// `colour` (linear RGB).
+    public static func glb(_ rig: HairRig.Rig, headBone: String, headJoint: HairRig.V3, cardColours: [[[Double]]]? = nil,
                            headRotation: simd_quatd = simd_quatd(ix: 0, iy: 0, iz: 0, r: 1), colour: [Double] = [0.35, 0.22, 0.14],
                            name: String = "Hair_gen", vrm0Axes: Bool = false) -> (data: Data, summary: Summary) {
         typealias V3 = HairRig.V3
@@ -99,7 +134,13 @@ public enum HairItem {
             let l = HairRig.norm(N[i])
             let u = l > 0 ? N[i] / l : V3(0, 1, 0)
             nrm += [Float(u.x), Float(u.y), Float(u.z)]
-            uv += [Float(rig.uv[i].x), Float(1 - rig.uv[i].y)]
+            if let cc = cardColours {
+                let px = 8.0, cards = Double(cc.count), B = Double(cc[0].count)
+                let u = (px * Double(rig.card[i]) + 0.25 * px + 0.5 * px * rig.uv[i].x) / (px * cards)
+                uv += [Float(u), Float(1 - (1 + B * rig.uv[i].y) / (B + 2))]
+            } else {
+                uv += [Float(rig.uv[i].x), Float(1 - rig.uv[i].y)]
+            }
             // head 1 − w, segment w · α, neighbour segment w · (1 − α)
             var inf: [(Int, Double)] = []
             let c = rig.chain[i], w = rig.weight[i]
@@ -156,11 +197,22 @@ public enum HairItem {
 
         let meshNode = nodes.count
         nodes.append(["name": name, "mesh": 0, "skin": 0])
-        let material: [String: Any] = [
+        var material: [String: Any] = [
             "name": "\(name)_MToon", "doubleSided": true,
             "pbrMetallicRoughness": ["baseColorFactor": colour + [1.0], "metallicFactor": 0.0, "roughnessFactor": 1.0],
             "extensions": ["VRMC_materials_mtoon": ["specVersion": "1.0", "shadeColorFactor": colour.map { 0.6 * $0 }]],
         ]
+        var textureBlock: [String: Any] = [:]
+        if let cc = cardColours, !cc.isEmpty {
+            // the per-card colours as the lit and the shade texture (HairDeck: white base, shade factor 0.6)
+            let atlas = colourAtlas(cc)
+            let v = view(atlas.png, target: nil)
+            textureBlock = ["images": [["bufferView": v, "mimeType": "image/png", "name": "\(name)_colors"]],
+                            "samplers": [["magFilter": 9729, "minFilter": 9729, "wrapS": 33071, "wrapT": 33071]],
+                            "textures": [["source": 0, "sampler": 0]]]
+            material["pbrMetallicRoughness"] = ["baseColorFactor": [1.0, 1.0, 1.0, 1.0], "baseColorTexture": ["index": 0], "metallicFactor": 0.0, "roughnessFactor": 1.0]
+            material["extensions"] = ["VRMC_materials_mtoon": ["specVersion": "1.0", "shadeColorFactor": [0.6, 0.6, 0.6], "shadeMultiplyTexture": ["index": 0]]]
+        }
         var gltf: [String: Any] = [
             "asset": ["version": "2.0", "generator": "mlx-hairdeck-swift"],
             "scene": 0, "scenes": [["nodes": [0, meshNode]]], "nodes": nodes,
@@ -171,6 +223,7 @@ public enum HairItem {
             "extensionsUsed": springs.isEmpty ? ["VRMC_materials_mtoon"] : ["VRMC_materials_mtoon", "VRMC_springBone"],
         ]
         if !springs.isEmpty { gltf["extensions"] = ["VRMC_springBone": ["specVersion": "1.0", "springs": springs]] }
+        for (k, v) in textureBlock { gltf[k] = v }
         while bin.count % 4 != 0 { bin.append(0) }
         gltf["buffers"] = [["byteLength": bin.count]]
 

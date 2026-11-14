@@ -1,6 +1,7 @@
 import Foundation
 import HairDeckCore
 import MLX
+import MLXRandom
 import simd
 
 // RunHairDeck — parity gates and the end-to-end point-cloud run of mlx-hairdeck-swift.
@@ -30,6 +31,15 @@ import simd
 //       written in the file's own axes (--vrm0 forces VRM 0.x axes with --body).
 //   RunHairDeck body --vrm BODY.vrm [--body BODY.json]
 //       the description read from a VRM, and how it differs from a HairDeck fit of the same body
+
+//   RunHairDeck gate4 --workspace HAIRDECK_ROOT --fixtures Fixtures/p4 [--gpu]
+//       DINOv3 tokens, the image DiT, the colour model and chains from image tokens (P4a)
+
+//   RunHairDeck image-hair --workspace HAIRDECK_ROOT --crop MODEL_INPUT.png (--vrm BODY.vrm | --body BODY.json) --out HAIR.glb
+//                          [--matte MATTE.png] [--seed 0] [--noise NOISE.npy] [--no-chains] [--no-colours] [--save DIR]
+//       a 448 x 448 model input (the character on white, cropped to the head) → DINOv3 → image DiT (Euler 50, CFG 2)
+//       → cards, per-card colours and chains → a coloured, skinned hair item on the body. --matte: the person matte of
+//       the crop (white = character); without it "not white" stands in. --save: cards, chains and tokens as files.
 
 func err(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
 
@@ -262,6 +272,168 @@ func gate3() throws -> Bool {
     return ok
 }
 
+func gate4() throws -> Bool {
+    let fx = need("--fixtures")
+    let m = try ImagePathModel(workspace: need("--workspace"))
+    func F(_ n: String) throws -> MLXArray { try NPYReader.load("\(fx)/\(n).npy") }
+    var ok = true
+    func check(_ name: String, _ got: MLXArray, _ want: MLXArray, tol: Float) {
+        guard got.shape == want.shape else { print("FAIL \(name): shape \(got.shape) vs \(want.shape)"); ok = false; return }
+        let d = HDOps.maxAbs(got, want)
+        if d > tol { ok = false }
+        print(String(format: "%@ %-20@ max_abs %.3e (tol %.0e, |ref|max %.2f) cos %.8f", d <= tol ? "ok  " : "FAIL", name as NSString, d, tol,
+                     abs(want).max().item(Float.self), HDOps.cosine(got, want)))
+    }
+    // ---- DINOv3
+    let rgb = try F("crop").asType(.float32).expandedDimensions(axis: 0)          // [1, 448, 448, 3], 0..255
+    let px = DINOv3.normalise(rgb)
+    check("dino_pixels", px, try F("dino_pixels").transposed(0, 2, 3, 1), tol: 1e-5)
+    let (rs, rc) = DINOv3.rope(28, 28)
+    check("dino_rope_sin", rs, try F("dino_rope_sin"), tol: 1e-5)
+    check("dino_rope_cos", rc, try F("dino_rope_cos"), tol: 1e-5)
+    let emb = m.dino.embed(px)
+    check("dino_embed", emb, try F("dino_embed"), tol: 1e-4)
+    // DINOv3 carries a few tokens of very large norm (|ref| max 1.6e5 here): the tolerance is relative, 1e-6
+    let b0 = try F("dino_block0")
+    check("dino_block0", m.dino.block(0, emb, rs, rc), b0, tol: 1e-6 * abs(b0).max().item(Float.self))
+    let t0 = Date()
+    let tokens = m.dino(px)
+    eval(tokens)
+    // the tokens are rounded to bfloat16 (steps of up to 1/128 of the value): a last-bit difference before the rounding is one step
+    check("dino_tokens", tokens, try F("dino_tokens"), tol: 5e-2)
+    print(String(format: "     DINOv3 forward %.1f s", Date().timeIntervalSince(t0)))
+
+    // ---- image DiT, on the reference's tokens
+    let refTok = try F("dino_tokens")
+    let ctx = m.image.encodeCond(refTok)
+    check("img_ctx", ctx, try F("img_ctx"), tol: 1e-4)
+    let noise = try F("noise_seed0")
+    check("img_v_cond", m.image.dit(noise, [0.7], ctx), try F("img_v_cond"), tol: 1e-4)
+    check("img_v_null", m.image.dit(noise, [0.7], m.image.dit.nullCtx), try F("img_v_null"), tol: 1e-4)
+    let x = Flow.sample(m.image.dit, ctx: ctx, noise: noise)
+    check("img_sample", x, try F("img_sample"), tol: 1e-3)
+    let refX = try F("img_sample")
+    let cards = Cards.fromTokens(refX, tokenizer: m.tokenizer, vae: m.vae)[0]
+    let ref = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: "\(fx)/cards.json")!) as! [[String: Any]]
+    var worst = 0.0, same = cards.count == ref.count
+    if same {
+        for (a, b) in zip(cards, ref) {
+            let seq = b["seq"] as! [[NSNumber]]
+            if seq.count != a.seq.count || a.triangle != ((b["shape"] as! NSNumber).intValue == 1) { same = false; break }
+            for (ra, rb) in zip(a.seq, seq) { for (p, q) in zip(ra, rb) { worst = max(worst, abs(p - q.doubleValue)) } }
+        }
+    }
+    if !(same && worst <= 1e-5) { ok = false }
+    print(String(format: "%@ cards.json           %d cards, counts and classes %@, max_abs %.3e (tol 1e-05)", same && worst <= 1e-5 ? "ok  " : "FAIL", cards.count, same ? "equal" : "DIFFER", worst))
+
+    // ---- colour model
+    let matte = try F("matte").asType(.float32).expandedDimensions(axis: 0)
+    let cctx = m.color.encodeCtx(refTok, rgb: rgb, matte: matte)
+    check("col_ctx", cctx, try F("col_ctx"), tol: 1e-4)
+    let flat = refX.asArray(Float.self)
+    let cleaned = m.tokenizer.clean(flat)
+    check("chain_clean_tokens", MLXArray(cleaned, [1, 192, 40]), try F("chain_clean_tokens"), tol: 1e-6)
+    let signed = MLXArray(m.tokenizer.signNormals(cleaned), [1, 192, 40])
+    check("col_tokens", signed, try F("col_tokens"), tol: 1e-6)
+    let refSigned = try F("col_tokens")
+    check("col_raw", m.color.raw(refSigned, cctx), try F("col_raw"), tol: 1e-4)
+    let lab = m.color(refSigned, cctx)
+    check("col_lab", lab, try F("col_lab"), tol: 1e-3)
+    // sRGB of the reference's Lab, for the existing slots, rounded to 4 decimals
+    let labRef = try F("col_lab").asArray(Float.self)
+    let want = try npyDoubles("\(fx)/col_srgb.npy")
+    let slots = (0..<192).filter { cleaned[$0 * 40 + 39] > 0 }
+    var sw = 0.0, n = 0
+    for s in slots {
+        for b in 0..<16 {
+            let o = (s * 16 + b) * 3
+            let c = ColorDiT.labToSRGB([Double(labRef[o]), Double(labRef[o + 1]), Double(labRef[o + 2])])
+            for a in 0..<3 { sw = max(sw, abs((c[a] * 10000).rounded(.toNearestOrEven) / 10000 - want[n])); n += 1 }
+        }
+    }
+    let sOK = n == want.count && sw <= 1.0001e-4
+    if !sOK { ok = false }
+    print(String(format: "%@ col_srgb             %d values, max_abs %.3e (tol 1e-04: one step of the 4-decimal rounding)", sOK ? "ok  " : "FAIL", n, sw))
+
+    // ---- chains from the image-model tokens
+    let cx = Flow.sample(m.chains.chain.dit, ctx: m.chains.chain.encodeCond(try F("chain_clean_tokens")), noise: try F("chain_noise"))
+    check("chain_sample", cx, try F("chain_sample"), tol: 1e-3)
+    print(String(format: "peak RSS %.2f GiB", peakRSSGiB()))
+    return ok
+}
+
+func imageHair() throws {
+    let t0 = Date()
+    let m = try ImagePathModel(workspace: need("--workspace"))
+    let tLoad = Date().timeIntervalSince(t0)
+    let img = try HDIO.readRGBA(need("--crop"))
+    guard img.width == 448, img.height == 448 else { err("the model input must be 448 x 448, got \(img.width) x \(img.height)"); exit(2) }
+    var rgb = [Float](repeating: 0, count: 448 * 448 * 3), matte = [Float](repeating: 0, count: 448 * 448)
+    for i in 0..<(448 * 448) {
+        for a in 0..<3 { rgb[i * 3 + a] = Float(img.pixels[i * 4 + a]) }
+        matte[i] = (0..<3).contains { img.pixels[i * 4 + $0] < 250 } ? 1 : 0
+    }
+    if let mp = opt("--matte") {
+        let mi = try HDIO.readRGBA(mp)
+        guard mi.width == 448, mi.height == 448 else { err("the matte must be 448 x 448"); exit(2) }
+        for i in 0..<(448 * 448) { matte[i] = mi.pixels[i * 4] > 127 ? 1 : 0 }
+    }
+    if !matte.contains(1) { matte = [Float](repeating: 1, count: matte.count) }
+    let seed = UInt64(opt("--seed") ?? "0")!
+    var t = Date()
+    let rgbA = MLXArray(rgb, [1, 448, 448, 3])
+    let tokens = m.dino(DINOv3.normalise(rgbA))
+    eval(tokens)
+    let tDino = Date().timeIntervalSince(t)
+    t = Date()
+    // the noise: a file (the reference's, for a sample-for-sample comparison) or MLX's generator
+    let noise = try opt("--noise").map { try NPYReader.load($0) } ?? MLXRandom.normal([1, 192, 40], key: MLXRandom.key(seed))
+    let x = Flow.sample(m.image.dit, ctx: m.image.encodeCond(tokens), noise: noise)
+    let tSample = Date().timeIntervalSince(t)
+    t = Date()
+    let cards = Cards.fromTokens(x, tokenizer: m.tokenizer, vae: m.vae)[0]
+    let cleaned = m.tokenizer.clean(x.asArray(Float.self))
+    var colours: [[[Double]]]? = nil
+    if !flag("--no-colours") && !cards.isEmpty {
+        let lab = m.color(MLXArray(m.tokenizer.signNormals(cleaned), [1, 192, 40]),
+                          m.color.encodeCtx(tokens, rgb: rgbA, matte: MLXArray(matte, [1, 448, 448]))).asArray(Float.self)
+        let slots = (0..<192).filter { cleaned[$0 * 40 + 39] > 0 }
+        colours = slots.map { s in (0..<16).map { b in
+            let o = (s * 16 + b) * 3
+            return ColorDiT.labToSRGB([Double(lab[o]), Double(lab[o + 1]), Double(lab[o + 2])]).map { ($0 * 10000).rounded(.toNearestOrEven) / 10000 }
+        } }
+    }
+    let tColour = Date().timeIntervalSince(t)
+    t = Date()
+    var chains: [ChainDiT.Chain] = []
+    if !flag("--no-chains") {
+        let cn = MLXRandom.normal([1, ChainDiT.slots, m.chains.chain.tokenDim], key: MLXRandom.key(seed))
+        let cx = Flow.sample(m.chains.chain.dit, ctx: m.chains.chain.encodeCond(MLXArray(cleaned, [1, 192, 40])), noise: cn)
+        chains = m.chains.chain.decode(cx.asArray(Float.self))
+    }
+    let tChains = Date().timeIntervalSince(t)
+    if let dir = opt("--save") {
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        var obj = cards.map { ["shape": $0.triangle ? "triangle" : "square", "seq": $0.seq] as [String: Any] }
+        if let colours { for i in 0..<obj.count { obj[i]["colors"] = colours[i] } }
+        try JSONSerialization.data(withJSONObject: obj).write(to: URL(fileURLWithPath: "\(dir)/cards_head.json"))
+        try JSONSerialization.data(withJSONObject: chains.map { $0.json }).write(to: URL(fileURLWithPath: "\(dir)/chains_head.json"))
+        try HDIO.writeNPY(x, to: "\(dir)/tokens.npy")
+    }
+    var vrm0 = false
+    let body: BodyPlacement
+    if let vp = opt("--vrm") { let v = try VRMBody(vrm: vp); body = v.placement; vrm0 = v.isVRM0 } else { body = try BodyPlacement(json: need("--body")) }
+    t = Date()
+    let rig = HairRig.build(cards: cards, chains: chains.map { (joints: $0.joints, stiffness: $0.stiffness) }, body: body)
+    let (data, s) = HairItem.glb(rig, headBone: body.headBone, headJoint: body.headJointWorld, cardColours: colours, headRotation: body.headRotation, vrm0Axes: vrm0)
+    try data.write(to: URL(fileURLWithPath: need("--out")))
+    let tItem = Date().timeIntervalSince(t)
+    print("wrote \(need("--out")): \(data.count) bytes, \(cards.count) cards, \(chains.count) chains generated (\(rig.chains.count) used), \(s.vertices) vertices, "
+          + "\(s.springs) springs, colours \(colours == nil ? "one" : "per card")")
+    print(String(format: "load %.1f s | DINOv3 %.2f s, image DiT %.2f s, decode + colours %.2f s, chains %.2f s, rig + glb %.2f s | peak MLX %.2f GiB, peak RSS %.2f GiB",
+                 tLoad, tDino, tSample, tColour, tChains, tItem, Double(GPU.peakMemory) / Double(1 << 30), peakRSSGiB()))
+}
+
 func describeBody() throws {
     let v = try VRMBody(vrm: need("--vrm"))
     let p = v.placement
@@ -414,6 +586,12 @@ do {
         let ok = try gate3()
         print(ok ? "GATE PASSED" : "GATE FAILED")
         exit(ok ? 0 : 1)
+    case "gate4":
+        let ok = flag("--gpu") ? try gate4() : try Device.withDefaultDevice(.cpu) { try gate4() }
+        print(ok ? "GATE PASSED" : "GATE FAILED")
+        exit(ok ? 0 : 1)
+    case "image-hair":
+        try imageHair()
     case "hair-item":
         try hairItem()
     case "body":
