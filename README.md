@@ -83,7 +83,9 @@ holds for VRoid models.
 
 ## P4a results
 
-Parity against PyTorch (CPU, fp32; `tools/dump_p4_fixtures.py` → `Fixtures/p4`, demo image ex01), max abs: DINOv3 RoPE
+Parity against PyTorch (CPU, fp32; `tools/dump_p4_fixtures.py` → `Fixtures/p4`), max abs, as first measured on one of
+HairDeck's demo pictures (the fixtures in the repo are now from the repo's own picture, below, and the gate passes on
+them the same way): DINOv3 RoPE
 4.6e-7, patch embedding 2.6e-5, block 0 2.5e-8 relative, final tokens 3.9e-3 (they are rounded to bfloat16; one step);
 image DiT forward 5.2e-6, 50-step sample 8.3e-6, 89 cards equal to 1.8e-7; colour context 3.1e-6, colour output
 3.7e-6, Lab 8.0e-5, the 4-decimal sRGB values equal; chains from the image tokens 1.2e-6.
@@ -91,9 +93,10 @@ image DiT forward 5.2e-6, 50-step sample 8.3e-6, 89 cards equal to 1.8e-7; colou
 End to end from a 448 × 448 model input (`RunHairDeck image-hair`, GPU): DINOv3 0.33 s, image DiT 1.39 s, decoding
 and colours 0.80 s, chains 1.11 s, rig and `.glb` 0.01 s; peak MLX memory 3.8 GiB. The PyTorch reference on this Mac
 (MPS) takes 4.7 + 2.3 + 1.8 s for the same stages, after 21.1 s of preprocessing (SAM 3 13.3 s, BiRefNet 7.2 s).
-The demo image and the generated hair with its per-card colours on Spec:
+The repo's test picture (`Fixtures/pictures/girl.png`: an original character made with Z-Image Turbo through Gaea,
+seed 11, cut out with BiRefNet) and the hair generated from it, with its per-card colours, on HairDeck's avatar:
 
-![image to hair on Spec](docs/p4_image_to_hair_on_spec.jpg)
+![image to hair on the avatar](docs/p4_image_to_hair_on_avatar.jpg)
 
 Per-card colours travel as a small texture (one 8-pixel column per card, 18 rows), used as the base colour and the
 MToon shade texture. The crop above comes from the reference's preprocessing, and the matte handed to the colour
@@ -103,7 +106,8 @@ model was "not white".
 
 `ModelInput` turns a picture, its person matte and a head box into the 448 px model input and the matte crop with
 Pillow's own integer arithmetic (alpha compositing, premultiplied bicubic resize, nearest for the matte): on demo
-images ex01 and ex02 all 602,112 values of the model input and every matte pixel equal the reference's
+the test picture (and, when first measured, on two of HairDeck's demo pictures) all 602,112 values of the model input
+and every matte pixel equal the reference's
 (`RunHairDeck gate4b`). The head box is the square around hair ∪ face with an 8 % margin.
 
 The head box is an input by decision (2026-11-13): the app passes it, for example a rectangle the user drags; an
@@ -152,7 +156,7 @@ or to place on a body.
   for the same picture, matte, box, body and seed; run 0.95 s, peak MLX 3.76 GiB.
 - First use on an empty model store: `prepare()` downloads `xocialize/hairdeck-mlx` (the image path's five files) and
   `dino.safetensors` of `xocialize/trellis2-mlx` — 2.6 GB in 76 s here — and the result is again the same bytes. The
-  weights repo is private for now, so the download needs `HF_TOKEN`.
+  weights repo is public; no token is needed.
 - Declared footprint (one float32 tier): 2.9 GB resident + 1.3 GB peak activation, from the in-process peak; the
   engine's memory harness has not been run on it yet.
 

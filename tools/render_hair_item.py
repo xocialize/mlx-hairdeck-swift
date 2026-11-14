@@ -2,6 +2,9 @@
 
   BLENDER -b --python tools/render_hair_item.py -- BODY.vrm HAIR.glb OUT.png
 Needs the VRM Add-on for Blender. A check of placement only (rest pose, flat lighting).
+The add-on turns a VRM 0.x body to face Blender's front on import, while the glTF importer takes the item as it is
+written: for a 0.x body give an item written in VRM 1.0 axes (`hair-item --body BODY.json`, not `--vrm`), or the
+hair shows back to front here although it matches the file.
 """
 import math
 import sys

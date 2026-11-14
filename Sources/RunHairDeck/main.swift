@@ -447,7 +447,7 @@ func rgbOf(_ path: String) throws -> (px: [UInt8], w: Int, h: Int) {
 func gate4b() throws -> Bool {
     let fx = need("--fixtures")
     var ok = true
-    for ex in ["ex01", "ex02"] {
+    for ex in ["girl"] {
         let info = try JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: "\(fx)/\(ex)_box.json")!) as! [String: Any]
         let box = (info["box"] as! [NSNumber]).map { $0.doubleValue }
         func b(_ k: String) -> [Double]? { (info[k] as? [NSNumber])?.map { $0.doubleValue } }

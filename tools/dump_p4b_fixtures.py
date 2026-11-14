@@ -2,7 +2,8 @@
 model input and matte crop made from them (hairdeck.infer.image.Pipeline.prep / matte_crop).
 
   source /Volumes/Satechi/charm/HairDeck/hairdeck_env.sh
-  python tools/dump_p4b_fixtures.py Fixtures/p4b [--examples ex01 ex02 ...] [--full ex01]
+  python tools/dump_p4b_fixtures.py Fixtures/p4b --dir Fixtures/pictures --examples girl      (the repo's own picture)
+  python tools/dump_p4b_fixtures.py OUT [--examples ex01 ex02 ...] [--full ex01]            (HairDeck's demo pictures)
 Per example: <ex>_box.json (box, status, mask boxes, timings). For the --full examples also <ex>_rgb.png (the pixels
 the preprocessing saw), <ex>_person.png (the matte, 8-bit), <ex>_input.png (the 448 px model input) and
 <ex>_matte.png (the matte crop the colour model reads, white = character).
@@ -27,12 +28,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('out')
     ap.add_argument('--examples', nargs='+', default=[f'ex{i:02d}' for i in range(1, 13)])
-    ap.add_argument('--full', nargs='+', default=['ex01', 'ex02'])
+    ap.add_argument('--full', nargs='+', default=['girl'])
+    ap.add_argument('--dir', default='', help='read <example>.png from this folder instead of HairDeck\'s demo_examples')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     pre = Preprocessor('best')
     for ex in a.examples:
-        f = paths.data('demo_examples', f'{ex}.png')
+        f = os.path.join(a.dir, f'{ex}.png') if a.dir else paths.data('demo_examples', f'{ex}.png')
         rgb, alpha, note, src = load_image(f, want_path=True)
         p = pre(rgb, alpha, src)
         info = dict(example=ex, size=[int(rgb.shape[1]), int(rgb.shape[0])], status=p['status'], box=list(p['box']) if p['box'] is not None else None,
