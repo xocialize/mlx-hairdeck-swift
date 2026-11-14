@@ -11,7 +11,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
 | P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
 | P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b: picture + matte + head box → coloured hair item in one call, model input bit-exact; the head box comes from the caller (decision 2026-11-13), the matte from a matting model outside this package |
-| P5 | MLXEngine `ModelPackage`, conformance, weights repo, Gaea plugin | weights snapshot published privately (`xocialize/hairdeck-mlx`), loaders read it and every gate passes on it; the conformer waits on the capability (AB-A-0277) and the plugin on the MES operation (AB-A-0278) |
+| P5 | MLXEngine `ModelPackage`, conformance, weights repo, Gaea plugin | `HairDeckKit`: the `characterPart` package (contract 1.63.0) — offline conformance green, engine-driven run byte-identical to the CLI, weights download into a clean store (2026-11-13). Open: the engine's 0.78.0 tag is not on GitHub yet (build with `MLX_ENGINE_PATH`), the footprint through the memory harness, the Gaea plugin (after `mesh.generate_part`, AB-T-0482) |
 
 ## P1 results
 
@@ -136,6 +136,26 @@ themselves agree with the reference's at IoU 0.89–0.98 on ten pictures and bad
 0.58: BiRefNet alone keeps the background the reference's SAM 3-guided matte drops), and even there the hair changes
 less than with another seed.
 
+## P5: the engine package
+
+`HairDeckKit` wraps the image path as an MLXEngine `ModelPackage` on the `characterPart` capability (mlx-engine-swift
+0.78.0, contract 1.63.0, AB-A-0277): `CharacterPartRequest(image:, subjectBox: [x0, y0, x1, y1], body:, seed:,
+springBones:, colors:)` → `CharacterPartResponse(mesh:, part: .hair, fittedToBody:)`. With a body the item is placed on
+its head; without one it comes back in the model's own head frame. A picture with transparency is used as it is cut
+out; an opaque one needs the host's matting (`HairDeckConfiguration.matting`, the Trellis2 pattern) and is refused with
+the reason otherwise. The point-cloud path is not a surface of the package: a bare cloud has no head to hang chains on
+or to place on a body.
+
+- Offline conformance (`swift test`, 10 tests: contract version, surface, declaration, specialty, licences, configuration,
+  requirements, weight sources and probe, `run()`'s refusals, cancellation first): green.
+- Through `MLXServeEngine` (`RunHairDeckEngine`: register → prepare → run): the hair item equals the CLI's byte for byte
+  for the same picture, matte, box, body and seed; run 0.95 s, peak MLX 3.76 GiB.
+- First use on an empty model store: `prepare()` downloads `xocialize/hairdeck-mlx` (the image path's five files) and
+  `dino.safetensors` of `xocialize/trellis2-mlx` — 2.6 GB in 76 s here — and the result is again the same bytes. The
+  weights repo is private for now, so the download needs `HF_TOKEN`.
+- Declared footprint (one float32 tier): 2.9 GB resident + 1.3 GB peak activation, from the in-process peak; the
+  engine's memory harness has not been run on it yet.
+
 ## Use
 
 The weights come from either a HairDeck workspace (`--workspace HAIRDECK_ROOT`, the layout of its
@@ -153,6 +173,8 @@ swift run -c release RunHairDeck hair-item --cards CARDS.json --chains CHAINS.js
 swift run -c release RunHairDeck body --vrm BODY.vrm
 swift run -c release RunHairDeck gate4 --workspace HAIRDECK_ROOT --fixtures Fixtures/p4
 swift run -c release RunHairDeck image-hair --workspace HAIRDECK_ROOT --image IMAGE.png --matte MATTE.png --box X0,Y0,X1,Y1 --vrm BODY.vrm --out HAIR.glb
+MLX_ENGINE_PATH=… swift test
+MLX_ENGINE_PATH=… IMAGE=cutout.png BOX=x0,y0,x1,y1 BODY=body.vrm OUT=hair.glb MODELS_ROOT=… swift run -c release RunHairDeckEngine
 ```
 
 `run` reads `DIR/{idx:03d}.ply` (10,000 points with normals, the `hair_reform.ply` format) and writes CHARM-format
