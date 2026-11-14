@@ -86,6 +86,57 @@ public enum HDIO {
     }
 }
 
+/// Where the released files are: a HairDeck workspace (the layout of its `scripts/setup/download_weights.py`)
+/// or the consolidated snapshot of `tools/build_weights_repo.py` (flat files + `config.json`; DINOv3 is the
+/// `dino.safetensors` of the TRELLIS.2 snapshot, given separately).
+public enum HairDeckSource {
+    case workspace(String)
+    case snapshot(String, dino: String?)
+
+    struct Files {
+        var dora, pointCloud, image, color, chain, vae: String
+        var dino: String?
+    }
+
+    var files: Files {
+        switch self {
+        case .workspace(let r):
+            return Files(dora: "\(r)/third_party/weights/dora_vae_1_1/dora_vae_1_1_shape_model.safetensors",
+                         pointCloud: "\(r)/ckpt/pointcloud_model/model.safetensors", image: "\(r)/ckpt/image_model/model.safetensors",
+                         color: "\(r)/ckpt/color_model/model.safetensors", chain: "\(r)/ckpt/chain_model/model.safetensors",
+                         vae: "\(r)/ckpt/card_vae/model.safetensors", dino: "\(r)/third_party/weights/dinov3/model.safetensors")
+        case .snapshot(let d, let dino):
+            return Files(dora: "\(d)/dora_encoder.safetensors", pointCloud: "\(d)/pointcloud_dit.safetensors", image: "\(d)/image_dit.safetensors",
+                         color: "\(d)/color_dit.safetensors", chain: "\(d)/chain_dit.safetensors", vae: "\(d)/card_vae.safetensors", dino: dino)
+        }
+    }
+
+    /// One of the statistics objects: `card_stats`, `latent_stats`, `latent_stats_head`, `token_stats`,
+    /// `token_stats_head`, `chain_stats_head`.
+    func stats(_ name: String) throws -> [String: Any] {
+        switch self {
+        case .workspace(let r):
+            let paths = ["card_stats": "ckpt/card_vae/stats.json", "latent_stats": "ckpt/card_vae/latent_stats.json",
+                         "latent_stats_head": "ckpt/card_vae/latent_stats_head.json", "token_stats": "data/token_stats.json",
+                         "token_stats_head": "data/token_stats_head.json", "chain_stats_head": "data/spring/chain_stats_head.json"]
+            return try HDIO.jsonObject("\(r)/\(paths[name]!)")
+        case .snapshot(let d, _):
+            guard let o = try HDIO.jsonObject("\(d)/config.json")[name] as? [String: Any] else { throw HDIO.IOError.bad("\(d)/config.json: no \(name)") }
+            return o
+        }
+    }
+
+    func vae() throws -> CardVAE {
+        let vs = try stats("card_stats")
+        return CardVAE(weights: try Weights.load(files.vae), mu: HDIO.floats(vs["mu"]), sd: HDIO.floats(vs["sd"]))
+    }
+
+    func tokenizer(head: Bool) throws -> CardTokenizer {
+        let ts = try stats(head ? "token_stats_head" : "token_stats"), ls = try stats(head ? "latent_stats_head" : "latent_stats")
+        return CardTokenizer(rootMu: HDIO.floats(ts["root_mu"]), rootSd: HDIO.floats(ts["root_sd"]), latentMu: HDIO.floats(ls["mu"]), latentSd: HDIO.floats(ls["sd"]))
+    }
+}
+
 /// The released files of the point-cloud path in a HairDeck workspace (the layout of
 /// `scripts/setup/download_weights.py`), loaded once.
 public struct PointCloudModel {
@@ -94,22 +145,16 @@ public struct PointCloudModel {
     public let vae: CardVAE
     public let tokenizer: CardTokenizer
 
-    public static func paths(_ root: String) -> (dora: String, dit: String, vae: String, vaeStats: String, latentStats: String, tokenStats: String) {
-        ("\(root)/third_party/weights/dora_vae_1_1/dora_vae_1_1_shape_model.safetensors",
-         "\(root)/ckpt/pointcloud_model/model.safetensors", "\(root)/ckpt/card_vae/model.safetensors",
-         "\(root)/ckpt/card_vae/stats.json", "\(root)/ckpt/card_vae/latent_stats.json", "\(root)/data/token_stats.json")
-    }
+    public init(workspace root: String) throws { try self.init(source: .workspace(root)) }
 
-    public init(workspace root: String) throws {
-        let p = Self.paths(root)
-        try KeyContract.check(dora: p.dora, dit: p.dit, vae: p.vae)
+    public init(source: HairDeckSource) throws {
+        let f = source.files
+        try KeyContract.check(dora: f.dora, dit: f.pointCloud, vae: f.vae)
         // only the encoder half of the Dora checkpoint is used
-        dora = try Weights.load(p.dora).filter { $0.key.hasPrefix("encoder.") }
-        dit = SetDiT(weights: try Weights.load(p.dit))
-        let vs = try HDIO.jsonObject(p.vaeStats), ls = try HDIO.jsonObject(p.latentStats), ts = try HDIO.jsonObject(p.tokenStats)
-        vae = CardVAE(weights: try Weights.load(p.vae), mu: HDIO.floats(vs["mu"]), sd: HDIO.floats(vs["sd"]))
-        tokenizer = CardTokenizer(rootMu: HDIO.floats(ts["root_mu"]), rootSd: HDIO.floats(ts["root_sd"]),
-                                  latentMu: HDIO.floats(ls["mu"]), latentSd: HDIO.floats(ls["sd"]))
+        dora = try Weights.load(f.dora).filter { $0.key.hasPrefix("encoder.") }
+        dit = SetDiT(weights: try Weights.load(f.pointCloud))
+        vae = try source.vae()
+        tokenizer = try source.tokenizer(head: false)
     }
 }
 
@@ -121,17 +166,16 @@ public struct ChainModel {
     /// The head-frame card tokenizer (`data/token_stats_head.json`, `latent_stats_head.json`).
     public let tokenizer: CardTokenizer
 
-    public init(workspace root: String) throws {
-        let ckpt = "\(root)/ckpt/chain_model/model.safetensors", vaePath = "\(root)/ckpt/card_vae/model.safetensors"
-        try KeyContract.check(chain: ckpt, vae: vaePath)
-        let cs = try HDIO.jsonObject("\(root)/data/spring/chain_stats_head.json")
+    public init(workspace root: String) throws { try self.init(source: .workspace(root)) }
+
+    public init(source: HairDeckSource) throws {
+        let f = source.files
+        try KeyContract.check(chain: f.chain, vae: f.vae)
+        let cs = try source.stats("chain_stats_head")
         let doubles: (Any?) -> [Double] = { ($0 as? [Any] ?? []).map { ($0 as! NSNumber).doubleValue } }
-        chain = ChainDiT(weights: try Weights.load(ckpt), mu: doubles(cs["mu"]), sd: doubles(cs["sd"]))
-        let vs = try HDIO.jsonObject("\(root)/ckpt/card_vae/stats.json")
-        vae = CardVAE(weights: try Weights.load(vaePath), mu: HDIO.floats(vs["mu"]), sd: HDIO.floats(vs["sd"]))
-        let ts = try HDIO.jsonObject("\(root)/data/token_stats_head.json"), ls = try HDIO.jsonObject("\(root)/ckpt/card_vae/latent_stats_head.json")
-        tokenizer = CardTokenizer(rootMu: HDIO.floats(ts["root_mu"]), rootSd: HDIO.floats(ts["root_sd"]),
-                                  latentMu: HDIO.floats(ls["mu"]), latentSd: HDIO.floats(ls["sd"]))
+        chain = ChainDiT(weights: try Weights.load(f.chain), mu: doubles(cs["mu"]), sd: doubles(cs["sd"]))
+        vae = try source.vae()
+        tokenizer = try source.tokenizer(head: true)
     }
 }
 
@@ -161,20 +205,22 @@ public struct ImagePathModel {
     public var vae: CardVAE { chains.vae }
     public var tokenizer: CardTokenizer { chains.tokenizer }
 
-    public init(workspace root: String) throws {
-        let dinoPath = "\(root)/third_party/weights/dinov3/model.safetensors"
+    public init(workspace root: String) throws { try self.init(source: .workspace(root)) }
+
+    public init(source: HairDeckSource) throws {
+        let f = source.files
+        guard let dinoPath = f.dino else { throw HDIO.IOError.bad("the image path needs the DINOv3 weights file") }
         let missing = DINOv3.keys.subtracting(try SafetensorsHeader.keys(dinoPath))
         guard missing.isEmpty else { throw KeyContract.ContractError.mismatch("DINOv3 keys missing: \(missing.sorted().prefix(6))") }
         dino = DINOv3(weights: try Weights.load(dinoPath).filter { DINOv3.keys.contains($0.key) })
-        let imgPath = "\(root)/ckpt/image_model/model.safetensors", colPath = "\(root)/ckpt/color_model/model.safetensors"
         let want = KeyContract.setDiT().union(["ctx_pos"])
-        let ik = try SafetensorsHeader.keys(imgPath)
+        let ik = try SafetensorsHeader.keys(f.image)
         guard ik == want else { throw KeyContract.ContractError.mismatch("image DiT keys differ: \(ik.symmetricDifference(want).sorted().prefix(6))") }
         let wantCol = Set(want.map { "dit." + $0 }).union(["patch.weight", "patch.bias", "col_ada.weight", "col_ada.bias", "col_out.weight", "col_out.bias", "mu", "sd"])
-        let ck = try SafetensorsHeader.keys(colPath)
+        let ck = try SafetensorsHeader.keys(f.color)
         guard ck == wantCol else { throw KeyContract.ContractError.mismatch("colour model keys differ: \(ck.symmetricDifference(wantCol).sorted().prefix(6))") }
-        image = ImageDiT(weights: try Weights.load(imgPath))
-        color = ColorDiT(weights: try Weights.load(colPath))
-        chains = try ChainModel(workspace: root)
+        image = ImageDiT(weights: try Weights.load(f.image))
+        color = ColorDiT(weights: try Weights.load(f.color))
+        chains = try ChainModel(source: source)
     }
 }

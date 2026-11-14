@@ -65,6 +65,12 @@ func need(_ name: String) -> String {
     return v
 }
 
+/// The weights: --workspace HAIRDECK_ROOT, or --snapshot DIR (the consolidated files) with --dino FILE for the image path.
+func source() -> HairDeckSource {
+    if let d = opt("--snapshot") { return .snapshot(d, dino: opt("--dino")) }
+    return .workspace(need("--workspace"))
+}
+
 func peakRSSGiB() -> Double {
     var u = rusage()
     getrusage(RUSAGE_SELF, &u)
@@ -73,7 +79,7 @@ func peakRSSGiB() -> Double {
 
 func gate() throws -> Bool {
     let fx = need("--fixtures")
-    let model = try PointCloudModel(workspace: need("--workspace"))
+    let model = try PointCloudModel(source: source())
     func F(_ n: String) throws -> MLXArray { try NPYReader.load("\(fx)/\(n).npy") }
     var ok = true
     func check(_ name: String, _ got: MLXArray, _ want: MLXArray, tol: Float) {
@@ -162,7 +168,7 @@ func gate() throws -> Bool {
 
 func gate2() throws -> Bool {
     let fx = need("--fixtures")
-    let model = try ChainModel(workspace: need("--workspace"))
+    let model = try ChainModel(source: source())
     func F(_ n: String) throws -> MLXArray { try NPYReader.load("\(fx)/\(n).npy") }
     var ok = true
     func check(_ name: String, _ got: MLXArray, _ want: MLXArray, tol: Float) {
@@ -283,7 +289,7 @@ func gate3() throws -> Bool {
 
 func gate4() throws -> Bool {
     let fx = need("--fixtures")
-    let m = try ImagePathModel(workspace: need("--workspace"))
+    let m = try ImagePathModel(source: source())
     func F(_ n: String) throws -> MLXArray { try NPYReader.load("\(fx)/\(n).npy") }
     var ok = true
     func check(_ name: String, _ got: MLXArray, _ want: MLXArray, tol: Float) {
@@ -373,7 +379,7 @@ func gate4() throws -> Bool {
 
 func imageHair() throws {
     let t0 = Date()
-    let m = try ImagePathModel(workspace: need("--workspace"))
+    let m = try ImagePathModel(source: source())
     let tLoad = Date().timeIntervalSince(t0)
     var rgb = [Float](repeating: 0, count: 448 * 448 * 3), matte = [Float](repeating: 0, count: 448 * 448)
     var inputBytes: [UInt8]
@@ -552,7 +558,7 @@ func hairItem() throws {
 func chains() throws {
     let out = need("--out")
     let t0 = Date()
-    let model = try ChainModel(workspace: need("--workspace"))
+    let model = try ChainModel(source: source())
     let tLoad = Date().timeIntervalSince(t0)
     let noise = try NPYReader.load(need("--noise"))
     var rows: [Int] = []
@@ -602,7 +608,7 @@ func run() throws {
     let out = need("--out")
     let plys = need("--plys")
     let t0 = Date()
-    let model = try PointCloudModel(workspace: need("--workspace"))
+    let model = try PointCloudModel(source: source())
     let tLoad = Date().timeIntervalSince(t0)
     let noise = try NPYReader.load(need("--noise"))
     var lo = 0, hi = noise.shape[0]

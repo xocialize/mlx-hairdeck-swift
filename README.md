@@ -11,7 +11,7 @@ anime-style avatars. Work in progress — plan AB-P-0012 on the bridge.
 | P2 | spring-bone chains: chain DiT, chain decoding, card VAE encoder + head-frame card tokens | parity gate passed, Table 4 reproduced (2026-11-13) |
 | P3 | hair item `.glb` writer (card mesh, skinning, `VRMC_springBone`), no Blender | rig equal to the reference; `.glb` loads and swings in three-vrm; body read from any VRoid-style VRM; merged into Spec by Item Studio's `mergeVrm` with its springs (2026-11-13) |
 | P4 | image path: P4a generation from a model-input crop (DINOv3, image DiT, colour model, chains) — parity gate passed, coloured hair item end to end (2026-11-13); P4b preprocessing (matte, head crop) | P4b: picture + matte + head box → coloured hair item in one call, model input bit-exact; the head box comes from the caller (decision 2026-11-13), the matte from a matting model outside this package |
-| P5 | MLXEngine `ModelPackage`, conformance, weights repo | not started |
+| P5 | MLXEngine `ModelPackage`, conformance, weights repo, Gaea plugin | weights snapshot published privately (`xocialize/hairdeck-mlx`), loaders read it and every gate passes on it; the conformer waits on the capability (AB-A-0277) and the plugin on the MES operation (AB-A-0278) |
 
 ## P1 results
 
@@ -138,8 +138,10 @@ less than with another seed.
 
 ## Use
 
-Needs a HairDeck workspace with the released files (`scripts/setup/download_weights.py --only hairdeck dora`):
-`third_party/weights/dora_vae_1_1/…safetensors`, `ckpt/pointcloud_model`, `ckpt/card_vae`, `data/token_stats.json`.
+The weights come from either a HairDeck workspace (`--workspace HAIRDECK_ROOT`, the layout of its
+`scripts/setup/download_weights.py`) or the consolidated snapshot `xocialize/hairdeck-mlx` (`--snapshot DIR`, built by
+`tools/build_weights_repo.py`: the released tensors unchanged under flat names plus one `config.json`); the image path
+also takes `--dino FILE`, the `dino.safetensors` of `xocialize/trellis2-mlx`.
 
 ```bash
 swift run -c release RunHairDeck gate --workspace HAIRDECK_ROOT --fixtures Fixtures/p1
