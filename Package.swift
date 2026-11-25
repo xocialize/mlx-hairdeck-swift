@@ -11,8 +11,8 @@ import PackageDescription
 //   gated against PyTorch CPU fp32 captures (tools/dump_p1_fixtures.py → Fixtures/p1/*.npy).
 // RunHairDeck: the gate + end-to-end CLI. Gates are CLI modes, not `swift test` (the SPM test
 //   product's metallib is unreliable).
-// The engine contract. `characterPart` is contract 1.63.0 (mlx-engine-swift 0.78.0, AB-A-0277); until that
-// tag is on GitHub, MLX_ENGINE_PATH points at a local checkout that has it.
+// The engine contract. `characterPart` is contract 1.63.0 (mlx-engine-swift 0.78.0, AB-A-0277). The engine comes
+// from GitHub; MLX_ENGINE_PATH is an optional override for building against a local checkout.
 let enginePath = Context.environment["MLX_ENGINE_PATH"]
 
 let package = Package(
@@ -23,9 +23,10 @@ let package = Package(
         .library(name: "HairDeckKit", targets: ["HairDeckKit"]),
     ],
     dependencies: [
-        // The fleet's pinned mlx-swift fork (AB-D-0208) — the same URL the engine uses.
-        .package(url: "https://github.com/xocialize/mlx-swift", from: "0.32.4"),
-        enginePath.map { .package(path: $0) } ?? .package(url: "https://github.com/xocialize/mlx-engine-swift", from: "0.78.0"),
+        // The fleet's mlx-swift fork — the same URL and floor the engine uses. 0.33.1 is upstream 0.33.0 with the
+        // split-head attention routes off (AB-D-0264); the fork's own 0.33.0 tag is unpatched upstream.
+        .package(url: "https://github.com/xocialize/mlx-swift", from: "0.33.1"),
+        enginePath.map { .package(path: $0) } ?? .package(url: "https://github.com/xocialize/mlx-engine-swift", from: "0.82.1"),
         // First-run materialization of the declared weight sources into the engine's model store.
         .package(url: "https://github.com/huggingface/swift-huggingface.git", from: "0.9.0"),
     ],

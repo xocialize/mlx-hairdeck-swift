@@ -76,7 +76,13 @@ extension HairDeckConfiguration: WeightSourcing {
 }
 
 extension HairDeckConfiguration: WeightPrewarming {
+    /// The files this package loads, not their folders: the engine scans a folder for every weight file in it, and
+    /// in a shared store the DINOv3 file sits beside the rest of `trellis2-mlx` (16 GB the hair model never reads).
     public var prewarmPaths: [URL] {
-        weightSources.compactMap { directory(for: $0, storeRoot: modelsRootDirectory) }
+        weightSources.flatMap { source -> [URL] in
+            guard let dir = directory(for: source, storeRoot: modelsRootDirectory) else { return [] }
+            let files = source.role == "dinov3" ? [Self.dinoFile] : Self.snapshotFiles
+            return files.filter { $0.hasSuffix(".safetensors") }.map { dir.appending(path: $0) }
+        }
     }
 }

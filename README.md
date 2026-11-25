@@ -162,6 +162,10 @@ or to place on a body.
   weights repo is public; no token is needed.
 - Footprint (one float32 tier), measured through the engine by the memory-harness method: 2.83 GB resident, 4.36 GB
   peak over five runs, phys_footprint peak 5.23 GB; declared 2.9 GB resident + 2.6 GB activation = 5.5 GB.
+- From 0.2.2 the package builds on mlx-engine-swift 0.82.1 and the fleet's mlx-swift 0.33.1 (2026-11-25): the four
+  parity gates and the tests pass unchanged, and the footprint measured again is 2.83 GB resident, 3.98 GB peak over
+  five runs, phys_footprint peak 5.23 GB, so the declaration stands. Prewarming now names the package's own five weight
+  files; before, in a store shared with TRELLIS.2, it paged that whole folder (36.8 GB) at every load.
 
 ## Use
 
